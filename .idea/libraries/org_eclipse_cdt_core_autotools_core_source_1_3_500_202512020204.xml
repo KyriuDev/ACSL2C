@@ -1,0 +1,34 @@
+<component name="libraryTable">
+  <library name="org.eclipse.cdt.core.autotools.core.source_1.3.500.202512020204">
+    <CLASSES>
+      <root url="jar://$USER_HOME$/jars/org.eclipse.cdt.core.autotools.core_1.3.500.202512020204.jar!/" />
+      <root url="jar://$USER_HOME$/jars/org.eclipse.cdt.core.autotools.ui_1.2.500.202512020204.jar!/" />
+      <root url="jar://$USER_HOME$/jars/org.eclipse.cdt.core.linux.x86_64_12.3.0.202512021919.jar!/" />
+      <root url="jar://$USER_HOME$/jars/org.eclipse.cdt.core.linux.x86_64_12.4.0.202512221856.jar!/" />
+      <root url="jar://$USER_HOME$/jars/org.eclipse.cdt.core.linux_6.1.100.202402230238.jar!/" />
+      <root url="jar://$USER_HOME$/jars/org.eclipse.cdt.core.native_6.6.0.202512020204.jar!/" />
+      <root url="jar://$USER_HOME$/jars/org.eclipse.cdt.core.native_6.6.100.202512101642.jar!/" />
+      <root url="jar://$USER_HOME$/jars/org.eclipse.cdt.core_9.3.0.202512020204.jar!/" />
+      <root url="jar://$USER_HOME$/jars/org.eclipse.cdt.core_9.3.100.202512101642.jar!/" />
+      <root url="jar://$USER_HOME$/jars/org.eclipse.core.resources_3.23.100.v20251106-1705.jar!/" />
+      <root url="jar://$USER_HOME$/jars/org.eclipse.core.resources_3.23.200.v20251217-0810.jar!/" />
+      <root url="jar://$USER_HOME$/jars/org.eclipse.core.runtime_3.34.100.v20251111-1421.jar!/" />
+      <root url="jar://$USER_HOME$/jars/org.eclipse.core.runtime_3.34.200.v20251220-0953.jar!/" />
+      <root url="jar://$USER_HOME$/jars/org.eclipse.equinox.common_3.20.300.v20251111-0312.jar!/" />
+      <root url="jar://$USER_HOME$/jars/org.eclipse.osgi.compatibility.state_1.3.0.v20251022-1724.jar!/" />
+      <root url="jar://$USER_HOME$/jars/org.eclipse.osgi.services_3.12.300.v20250707-1221.jar!/" />
+      <root url="jar://$USER_HOME$/jars/org.eclipse.osgi_3.24.0.v20251126-0427.jar!/" />
+      <root url="jar://$USER_HOME$/jars/org.eclipse.osgi_3.24.100.v20251215-1416.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$USER_HOME$/jars/org.eclipse.cdt.core.autotools.core.source_1.3.500.202512020204.jar!/" />
+      <root url="jar://$USER_HOME$/jars/org.eclipse.cdt.core.autotools.ui.source_1.2.500.202512020204.jar!/" />
+      <root url="jar://$USER_HOME$/jars/org.eclipse.cdt.core.linux.source_6.1.100.202402230238.jar!/" />
+      <root url="jar://$USER_HOME$/jars/org.eclipse.cdt.core.native.source_6.6.0.202512020204.jar!/" />
+      <root url="jar://$USER_HOME$/jars/org.eclipse.cdt.core.native.source_6.6.100.202512101642.jar!/" />
+      <root url="jar://$USER_HOME$/jars/org.eclipse.cdt.core.source_9.3.0.202512020204.jar!/" />
+      <root url="jar://$USER_HOME$/jars/org.eclipse.cdt.core.source_9.3.100.202512101642.jar!/" />
+    </SOURCES>
+  </library>
+</component>
