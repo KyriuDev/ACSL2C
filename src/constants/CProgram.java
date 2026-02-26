@@ -1,9 +1,9 @@
 package constants;
 
-public class CPrograms
+public class CProgram
 {
 	/**
-	 * Name:        CPrograms.java
+	 * Name:        CProgram.java
 	 * Content:	    This class provides some examples of (syntactically correct) C programs.
 	 * 				They are used for test purposes and will rather probably be replaced by C programs provided on
 	 * 				command line.
@@ -12,7 +12,7 @@ public class CPrograms
 	 * Creation:    25/02/26
 	 */
 
-	private CPrograms()
+	private CProgram()
 	{
 
 	}
@@ -58,6 +58,20 @@ public class CPrograms
 			"int sum = x + y;\n\n" +
 
 			"return 0;\n" +
+		"}"
+	;
+
+	public static final String PROGRAM_2_WITH_LINE_BREAKS =
+		"int sum(int x, int y){\n" +
+			"return x + y;\n" +
+		"}\n" +
+		"\n" +
+		"int main() {\n" +
+			"int x = 5;\n" +
+			"int y = 7;\n" +
+			"int sum = sum(x,y);\n\n" +
+
+			"return sum;\n" +
 		"}"
 	;
 

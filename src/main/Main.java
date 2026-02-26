@@ -1,14 +1,13 @@
-import constants.CPrograms;
-import org.eclipse.cdt.core.dom.ast.*;
-import org.eclipse.cdt.core.parser.*;
-import org.eclipse.cdt.internal.core.dom.parser.c.CASTEqualsInitializer;
+package main;
+
+import constants.CProgram;
 import org.eclipse.cdt.internal.core.dom.parser.c.CASTTranslationUnit;
 import parsing.Parser;
 import visitors.RecursiveVisitor;
 import visitors.Visitors;
 
 /**
- *    Name:        Main.java
+ *    Name:        main.main.Main.java
  *    Content:     Parsing of C programs enhanced with ACSL contracts and (partial) folding of such programs
  *    Author:      Quentin Nivon
  *    Email:       quentin.nivon@uol.de
@@ -19,9 +18,10 @@ public class Main
 {
 	public static void main(final String[] args) throws Exception
 	{
-		final Parser parser = new Parser(CPrograms.PROGRAM_1_WITH_LINE_BREAKS);
-		final CASTTranslationUnit translationUnit = (CASTTranslationUnit) parser.parse();
+		//final CommandLineParser commandLineParser = new CommandLineParser(args);
 
+		final Parser parser = new Parser(CProgram.PROGRAM_SPIN_PAPER);
+		final CASTTranslationUnit translationUnit = (CASTTranslationUnit) parser.parse();
 
 		System.out.println("----------------- LINEAR PROGRAM -------------------\n");
 

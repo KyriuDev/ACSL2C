@@ -1,9 +1,9 @@
 package constants;
 
-public class CPPPrograms
+public class CPPProgram
 {
 	/**
-	 * Name:        CPPPrograms.java
+	 * Name:        CPPProgram.java
 	 * Content:	    This class provides some examples of (syntactically correct) C++ programs.
 	 * 				They are used for test purposes and will rather probably be replaced by C++ programs provided on
 	 * 				command line.
@@ -12,7 +12,7 @@ public class CPPPrograms
 	 * Creation:    25/02/26
 	 */
 
-	private CPPPrograms()
+	private CPPProgram()
 	{
 
 	}
