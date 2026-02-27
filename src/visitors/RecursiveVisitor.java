@@ -6,22 +6,21 @@ import constants.CType;
 import constants.CUnaryOperator;
 import misc.Utils;
 import org.eclipse.cdt.core.dom.ast.*;
-import org.eclipse.cdt.core.dom.ast.c.ICASTSimpleDeclSpecifier;
 import org.eclipse.cdt.internal.core.dom.parser.c.*;
 
 import java.util.Arrays;
 
+/**
+ * Name:        RecursiveVisitor.java
+ * Content:	    This class defines a recursive AST visitor that allows "simpler" (in the sense of "more similar to
+ * 				what we have in mind") traversal of the AST, by using a recursion-based DFS.
+ * Author:      Quentin Nivon
+ * Email:       quentin.nivon@uol.de
+ * Creation:    25/02/26
+ */
+
 public class RecursiveVisitor
 {
-	/**
-	 * Name:        RecursiveVisitor.java
-	 * Content:	    This class defines a recursive AST visitor that allows "simpler" (in the sense of "more similar to
-	 *              what we have in mind") traversal of the AST, by using a recursion-based DFS.
-	 * Author:      Quentin Nivon
-	 * Email:       quentin.nivon@uol.de
-	 * Creation:    25/02/26
-	 */
-
 	private static final boolean ISOLATE_FUNCTION_BLOCKS = true;
 	private final IASTNode rootNode;
 
@@ -43,14 +42,26 @@ public class RecursiveVisitor
 
 	//Private methods
 
+	/**
+	 * This method recursively traverses the AST in a depth-first way and store the information of the encountered
+	 * nodes in the given StringBuilder.
+	 *
+	 * @param node the node being managed
+	 * @param depth the depth at which the node is located (represented by a number "depth" of tabulations)
+	 * @param builder the builder containing the hierarchical representation of the tree
+	 */
 	private void printAST(final IASTNode node,
 					 	  final int depth,
 						  final StringBuilder builder)
 	{
-		final String nodeData = this.addNodeSpecificDataV2(node);
+		final String nodeData = this.addNodeSpecificData(node);
 
 		builder.append(Utils.addLeadingTabulations(depth))
-				.append(String.format("- Node \"%s\" has ", nodeData.isEmpty() ? node.toString() : nodeData));
+				.append(String.format(
+					"- Node \"%s\" (%s) has ",
+					nodeData.isEmpty() ? node.toString() : nodeData,
+					!nodeData.isEmpty() ? node.toString() : ""
+				));
 
 		if (node.getChildren() != null
 			&& node.getChildren().length > 0)
@@ -74,7 +85,14 @@ public class RecursiveVisitor
 		}
 	}
 
-	private String addNodeSpecificDataV2(final IASTNode node)
+	/**
+	 * This method aims at inserting in textual representation of the AST the interesting information, that is,
+	 * the function names, the operators used, the assignments, etc.
+	 *
+	 * @param node the considered node.
+	 * @return the specific information of the considered node, or the empty string if there is no such information.
+	 */
+	private String addNodeSpecificData(final IASTNode node)
 	{
 		if (node instanceof CASTFunctionDefinition)
 		{
@@ -156,7 +174,7 @@ public class RecursiveVisitor
 		}
 		else if (node instanceof CASTName)
 		{
-			return node.toString();
+			return "CASTName: " + node;
 		}
 		else
 		{
@@ -164,121 +182,6 @@ public class RecursiveVisitor
 			/*throw new UnsupportedOperationException(
 				String.format("Node type \"%s\" is not supported yet.", node.toString())
 			);*/
-		}
-
-		return "";
-	}
-
-	private String addNodeSpecificData(final IASTNode node)
-	{
-		if (node instanceof IASTName)
-		{
-			final IASTName iastName = (IASTName) node;
-			return iastName.resolveBinding().getName();
-		}
-		else if (node instanceof IASTParameterDeclaration)
-		{
-			final IASTParameterDeclaration iastParameterDeclaration = (IASTParameterDeclaration) node;
-			return String.format("%s/%s", iastParameterDeclaration.getDeclarator().toString(), iastParameterDeclaration.getDeclSpecifier().toString());
-		}
-		else if (node instanceof IASTDeclaration)
-		{
-			final IASTDeclaration declaration = (IASTDeclaration) node;
-
-			if (declaration instanceof IASTFunctionDefinition)
-			{
-				final IASTFunctionDefinition iastFunctionDefinition = (IASTFunctionDefinition) declaration;
-
-				if (iastFunctionDefinition instanceof CASTFunctionDefinition)
-				{
-					final CASTFunctionDefinition castFunctionDefinition = (CASTFunctionDefinition) iastFunctionDefinition;
-
-					//We obtained an object of type "CASTFunctionDefinition"
-				}
-			}
-		}
-		else if (node instanceof IASTAttributeOwner)
-		{
-			final IASTAttributeOwner attributeOwner = (IASTAttributeOwner) node;
-
-			if (attributeOwner instanceof IASTDeclSpecifier)
-			{
-				final IASTDeclSpecifier declSpecifier = (IASTDeclSpecifier) attributeOwner;
-
-				if (declSpecifier instanceof IASTSimpleDeclSpecifier)
-				{
-					final IASTSimpleDeclSpecifier simpleDeclSpecifier = (IASTSimpleDeclSpecifier) declSpecifier;
-
-					if (simpleDeclSpecifier instanceof ICASTSimpleDeclSpecifier)
-					{
-						final ICASTSimpleDeclSpecifier iCASTSimpleDeclSpecifier = (ICASTSimpleDeclSpecifier) simpleDeclSpecifier;
-
-						if (iCASTSimpleDeclSpecifier instanceof CASTSimpleDeclSpecifier)
-						{
-							final CASTSimpleDeclSpecifier castSimpleDeclSpecifier = (CASTSimpleDeclSpecifier) iCASTSimpleDeclSpecifier;
-
-							//We obtained an object of type "CASTSimpleDeclSpecifier"
-						}
-					}
-				}
-			}
-			else if (attributeOwner instanceof IASTDeclarator)
-			{
-				final IASTDeclarator iastDeclarator = (IASTDeclarator) attributeOwner;
-
-				if (iastDeclarator instanceof IASTFunctionDeclarator)
-				{
-					final IASTFunctionDeclarator iastFunctionDeclarator = (IASTFunctionDeclarator) iastDeclarator;
-
-					if (iastFunctionDeclarator instanceof IASTStandardFunctionDeclarator)
-					{
-						final IASTStandardFunctionDeclarator iastStandardFunctionDeclarator = (IASTStandardFunctionDeclarator) iastFunctionDeclarator;
-
-						if (iastStandardFunctionDeclarator instanceof CASTFunctionDeclarator)
-						{
-							final CASTFunctionDeclarator castFunctionDeclarator = (CASTFunctionDeclarator) iastStandardFunctionDeclarator;
-
-							//We obtained an object of type "CASTFunctionDeclarator"
-						}
-					}
-				}
-			}
-			else if (node instanceof IASTStatement)
-			{
-				final IASTStatement iastStatement = (IASTStatement) node;
-
-				if (iastStatement instanceof IASTReturnStatement)
-				{
-					final IASTReturnStatement returnStatement = (IASTReturnStatement) iastStatement;
-
-					if (returnStatement instanceof CASTReturnStatement)
-					{
-
-					}
-				}
-				else if (iastStatement instanceof IASTCompoundStatement)
-				{
-					final IASTCompoundStatement iastCompoundStatement = (IASTCompoundStatement) iastStatement;
-
-					if (iastCompoundStatement instanceof CASTCompoundStatement)
-					{
-						final CASTCompoundStatement castCompoundStatement = (CASTCompoundStatement) iastCompoundStatement;
-
-						//We obtained an object of type "CASTCompoundStatement"
-					}
-				}
-				else if (iastStatement instanceof IASTDeclarationStatement)
-				{
-					final IASTDeclarationStatement iastDeclarationStatement = (IASTDeclarationStatement) iastStatement;
-
-					if (iastDeclarationStatement instanceof CASTDeclarationStatement)
-					{
-						final CASTDeclarationStatement castDeclarationStatement = (CASTDeclarationStatement) iastDeclarationStatement;
-
-						//We obtained an object of type "CASTDeclarationStatement"
-					}
-				}
-			}
 		}
 
 		return "";

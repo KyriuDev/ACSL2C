@@ -1,17 +1,17 @@
 package constants;
 
+/**
+ * Name:        CProgram.java
+ * Content:	    This class provides some examples of (syntactically correct) C programs.
+ * 				They are used for test purposes and will rather probably be replaced by C programs provided on
+ * 				command line.
+ * Author:      Quentin Nivon
+ * Email:       quentin.nivon@uol.de
+ * Creation:    25/02/26
+ */
+
 public class CProgram
 {
-	/**
-	 * Name:        CProgram.java
-	 * Content:	    This class provides some examples of (syntactically correct) C programs.
-	 * 				They are used for test purposes and will rather probably be replaced by C programs provided on
-	 * 				command line.
-	 * Author:      Quentin Nivon
-	 * Email:       quentin.nivon@uol.de
-	 * Creation:    25/02/26
-	 */
-
 	private CProgram()
 	{
 
@@ -108,6 +108,46 @@ public class CProgram
 			"//@ assert((a-b) == z);\n" +
 			"\n" +
 			"return 0;\n" +
+		"}"
+	;
+
+	public static final String PROGRAM_TEST_PARSING_WRITING =
+		"extern int __VERIFIER_nondet_int(void);\n" +
+		"\n" +
+		"//@ requires y>=0;\n" +
+		"//@ ensures \\result = \\old(x) + \\old(y);\n" +
+		"int sum(int x, int y){\n" +
+			"while (true) {\n" +
+				"x++; y--;\n" +
+			"}\n" +
+			"return x;\n" +
+		"}\n" +
+		"\n" +
+		"//@ requires x>=0;\n" +
+		"//@ ensures \\result = \\old(y) - \\old(x);\n" +
+		"int diff(int x, int y){\n" +
+			"while (x>0) {\n" +
+				"x--; y--;\n" +
+			"}\n" +
+			"return y + x;\n" +
+		"}\n" +
+		"\n" +
+		"int main(){\n" +
+			"int x = __VERIFIER_nondet_int();\n" +
+			"int y = __VERIFIER_nondet_int();\n" +
+			"//@ assume(x >= 0 && y>= 0);\n" +
+			"\n" +
+			"2 * x;\n" +
+			"sum(x, y);\n" +
+			"int a = sum(x, y);\n" +
+			"int b = diff(x, y);\n" +
+			"int z = 2 * y;\n" +
+			"int w = -7894;\n" +
+			"_Bool bool = true;\n" +
+			"\n" +
+			"//@ assert((a-b) == z);\n" +
+			"\n" +
+			"return;\n" +
 		"}"
 	;
 }

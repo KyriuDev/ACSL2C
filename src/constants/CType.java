@@ -2,18 +2,18 @@ package constants;
 
 import org.eclipse.cdt.core.dom.ast.IASTSimpleDeclSpecifier;
 
+/**
+ * Name:        CType.java
+ * Content:	    This enum defines the simple C types supported by Eclipse-CDT along with their actual (textual)
+ * 				representation, and some utility methods useful for converting the Eclipse-CDT types to these ones
+ * 				and conversely.
+ * Author:      Quentin Nivon
+ * Email:       quentin.nivon@uol.de
+ * Creation:    26/02/26
+ */
+
 public enum CType
 {
-	/**
-	 * Name:        CType.java
-	 * Content:	    This enum defines the simple C types supported by Eclipse-CDT along with their actual (textual)
-	 * 				representation, and some utility methods useful for converting the Eclipse-CDT types to these ones
-	 * 				and conversely.
-	 * Author:      Quentin Nivon
-	 * Email:       quentin.nivon@uol.de
-	 * Creation:    26/02/26
-	 */
-
 	AUTO("auto", IASTSimpleDeclSpecifier.t_auto),
 	BOOL("_Bool", IASTSimpleDeclSpecifier.t_bool),
 	CHAR("char", IASTSimpleDeclSpecifier.t_char),

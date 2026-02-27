@@ -2,41 +2,46 @@ package constants;
 
 import org.eclipse.cdt.core.dom.ast.IASTUnaryExpression;
 
+import java.util.*;
+
+/**
+ * Name:        CUnaryOperator.java
+ * Content:	    This enum defines the unary operators supported by Eclipse-CDT along with their actual
+ * 				(textual) representation, and some utility methods useful for converting the Eclipse-CDT types
+ * 				to these operators and conversely.
+ * Author:      Quentin Nivon
+ * Email:       quentin.nivon@uol.de
+ * Creation:    26/02/26
+ */
+
 public enum CUnaryOperator
 {
-	/**
-	 * Name:        CUnaryOperator.java
-	 * Content:	    This enum defines the unary operators supported by Eclipse-CDT along with their actual
-	 * 				(textual) representation, and some utility methods useful for converting the Eclipse-CDT types
-	 * 				to these operators and conversely.
-	 * Author:      Quentin Nivon
-	 * Email:       quentin.nivon@uol.de
-	 * Creation:    26/02/26
-	 */
-
-	AMPER("&", IASTUnaryExpression.op_amper),
-	MINUS("-", IASTUnaryExpression.op_minus),
-	NOT("!", IASTUnaryExpression.op_not),
-	PLUS("+", IASTUnaryExpression.op_plus),
-	POSTFIX_DECREMENTATION("--", IASTUnaryExpression.op_postFixDecr),
-	POSTFIX_INCREMENTATION("++", IASTUnaryExpression.op_postFixIncr),
-	PREFIX_DECREMENTATION("--", IASTUnaryExpression.op_prefixDecr),
-	PREFIX_INCREMENTATION("++", IASTUnaryExpression.op_prefixIncr),
-	SIZEOF("sizeof", IASTUnaryExpression.op_sizeof),
-	STAR("*", IASTUnaryExpression.op_star),
-	TILDE("~", IASTUnaryExpression.op_tilde)
+	AMPER("&", IASTUnaryExpression.op_amper, true),
+	MINUS("-", IASTUnaryExpression.op_minus, true),
+	NOT("!", IASTUnaryExpression.op_not, true),
+	PLUS("+", IASTUnaryExpression.op_plus, true),
+	POSTFIX_DECREMENTATION("--", IASTUnaryExpression.op_postFixDecr, false),
+	POSTFIX_INCREMENTATION("++", IASTUnaryExpression.op_postFixIncr, false),
+	PREFIX_DECREMENTATION("--", IASTUnaryExpression.op_prefixDecr, true),
+	PREFIX_INCREMENTATION("++", IASTUnaryExpression.op_prefixIncr, true),
+	SIZEOF("sizeof", IASTUnaryExpression.op_sizeof, true),
+	STAR("*", IASTUnaryExpression.op_star, true),
+	TILDE("~", IASTUnaryExpression.op_tilde, true)
 	;
 
 	private final String operator;
 	private final int eclipseCDTIntValue;
+	private final boolean isPrefixOperator;
 
 	//Constructors
 
 	CUnaryOperator(final String operator,
-				   final int eclipseCDTIntValue)
+				   final int eclipseCDTIntValue,
+				   final boolean isPrefixOperator)
 	{
 		this.operator = operator;
 		this.eclipseCDTIntValue = eclipseCDTIntValue;
+		this.isPrefixOperator = isPrefixOperator;
 	}
 
 	//Public functions
@@ -49,6 +54,11 @@ public enum CUnaryOperator
 	public int getEclipseCDTIntValue()
 	{
 		return this.eclipseCDTIntValue;
+	}
+
+	public boolean isPrefixOperator()
+	{
+		return this.isPrefixOperator;
 	}
 
 	//Static functions

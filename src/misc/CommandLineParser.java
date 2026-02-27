@@ -28,6 +28,9 @@ public class CommandLineParser
     public CommandLineParser(final String[] args)
 	{
         this.commands = new HashMap<>();
+        this.put(CommandLineOption.WORKING_DIRECTORY, new File("/home/quentin/test"));
+        this.put(CommandLineOption.C_FILE, new File("/home/quentin/test/file.c"));
+
         if (args == null) return;
 
         this.parse(args);
@@ -36,44 +39,91 @@ public class CommandLineParser
         {
             System.out.println(this.helpMessage());
             this.commands.clear();
+            return;
         }
 
-       // this.retrieveArgsFromWorkingDirectory();
+        this.retrieveArgsFromWorkingDirectory();
 
         if (!this.verifyArgs())
         {
-            throw new IllegalStateException("Necessary arguments are missing. Please make sure you have specified the" +
-                    " following elements: C file, or that the working directory that you specified contains these" +
-                    " elements.");
+            throw new IllegalStateException(
+                "Necessary arguments are missing. Please make sure you have specified the following elements: C " +
+                "file, or that the working directory that you specified contains these elements."
+            );
         }
     }
 
     //Public methods
 
-    public void put(CommandLineOption commandLineOption,
-                    Object o)
+    /**
+     * This method is a wrapper for the Map.put(Object, Object) function, which allows any internal representation of
+     * that given map.
+     *
+     * @param commandLineOption the considered command line option.
+     * @param o the object to associate with it.
+     */
+    public void put(final CommandLineOption commandLineOption,
+                    final Object o)
     {
         this.commands.put(commandLineOption, o);
     }
 
-    public Object get(CommandLineOption commandLineOption)
+    /**
+     * This method is a wrapper for the Map.get(Object) function, which allows any internal representation of that
+     * given map.
+     *
+     * @param commandLineOption the considered command line option.
+     */
+    public Object get(final CommandLineOption commandLineOption)
     {
         return this.commands.get(commandLineOption);
     }
 
-    public boolean containsKey(final CommandLineOption key)
+    /**
+     * This method is a wrapper for the Map.getOrDefault(Object, Object) function, which allows any internal
+     * representation of that given map.
+     *
+     * @param commandLineOption the considered command line option.
+     * @param defaultValue the default value to associate to the command line option if it does not belong to the map.
+     */
+    public Object getOrDefault(final CommandLineOption commandLineOption,
+                               final Object defaultValue)
     {
-        return this.commands.containsKey(key);
+        return this.commands.getOrDefault(commandLineOption, defaultValue);
+    }
+
+    /**
+     * This method is a wrapper for the Map.containsKey(Object) function, which allows any internal representation of
+     * that given map.
+     *
+     * @param commandLineOption the considered command line option.
+     */
+    public boolean containsKey(final CommandLineOption commandLineOption)
+    {
+        return this.commands.containsKey(commandLineOption);
     }
 
     //Private methods
 
+    /**
+     * This method shows a helpful message on the command line to the user that does not know (yet) how to use this
+     * program.
+     *
+     * @return the help message
+     */
     private String helpMessage()
     {
         //TODO
-        return "";
+        return "The helping message has not been implemented yet :-(";
     }
 
+    /**
+     * This method is used to parse the arguments given on the command line.
+     * It first checks if the user asked for help, or agrees to (potentially) overwrite the files.
+     * Then, it performs the remaining analysis to retrieve all the other elements.
+     *
+     * @param commandLineArgs the array of command line arguments
+     */
     private void parse(final String[] commandLineArgs)
     {
         //Check first for help or overwrites
@@ -84,7 +134,7 @@ public class CommandLineParser
                 || arg.equalsIgnoreCase("-help")
                 || arg.equalsIgnoreCase("--help"))
             {
-                this.commands.put(CommandLineOption.HELP, null);
+                this.put(CommandLineOption.HELP, null);
                 return;
             }
             else if (arg.equalsIgnoreCase("-f")
@@ -92,7 +142,7 @@ public class CommandLineParser
                     || arg.equalsIgnoreCase("-force")
                     || arg.equalsIgnoreCase("--force"))
             {
-                this.commands.put(CommandLineOption.OVERWRITE, true);
+                this.put(CommandLineOption.OVERWRITE, true);
             }
         }
 
@@ -101,110 +151,115 @@ public class CommandLineParser
         {
             if (this.isCFile(arg))
             {
-                if (this.commands.containsKey(CommandLineOption.C_FILE))
+                if (this.containsKey(CommandLineOption.C_FILE))
                 {
-                    if ((boolean) this.commands.getOrDefault(CommandLineOption.OVERWRITE, false))
+                    if ((boolean) this.getOrDefault(CommandLineOption.OVERWRITE, false))
                     {
                         System.out.println(Color.getYellowMessage(String.format(
                             "WARNING: A .c file has already been parsed (%s). As overwriting has been permitted, " +
                             "the old one will be replaced by the new one (%s).",
-                            ((File) this.commands.get(CommandLineOption.C_FILE)).getAbsolutePath(),
+                            ((File) this.get(CommandLineOption.C_FILE)).getAbsolutePath(),
                             arg
                         )));
 
-                        this.commands.put(CommandLineOption.C_FILE, new File(arg));
+                        this.put(CommandLineOption.C_FILE, new File(arg));
                     }
                     else
                     {
                         System.out.println(Color.getYellowMessage(String.format(
                             "WARNING: A .c file has already been parsed (%s). As overwriting has not been " +
                             "permitted, the current one (%s) will be ignored.",
-                            ((File) this.commands.get(CommandLineOption.C_FILE)).getAbsolutePath(),
+                            ((File) this.get(CommandLineOption.C_FILE)).getAbsolutePath(),
                             arg
                         )));
                     }
                 }
                 else
                 {
-                    this.commands.put(CommandLineOption.C_FILE, new File(arg));
+                    this.put(CommandLineOption.C_FILE, new File(arg));
                 }
             }
             else if (this.isDir(arg))
             {
-                if (this.commands.containsKey(CommandLineOption.WORKING_DIRECTORY))
+                if (this.containsKey(CommandLineOption.WORKING_DIRECTORY))
                 {
-                    if ((boolean) this.commands.getOrDefault(CommandLineOption.OVERWRITE, false))
+                    if ((boolean) this.getOrDefault(CommandLineOption.OVERWRITE, false))
                     {
                         System.out.println(Color.getYellowMessage(String.format(
                             "WARNING: A working directory has already been parsed (%s). As overwriting has been " +
                             "permitted, the old one will be replaced by the new one (%s).",
-                            ((File) this.commands.get(CommandLineOption.WORKING_DIRECTORY)).getAbsolutePath(),
+                            ((File) this.get(CommandLineOption.WORKING_DIRECTORY)).getAbsolutePath(),
                             arg
                         )));
 
-                        this.commands.put(CommandLineOption.WORKING_DIRECTORY, new File(arg));
+                        this.put(CommandLineOption.WORKING_DIRECTORY, new File(arg));
                     }
                     else
                     {
                         System.out.println(Color.getYellowMessage(String.format(
                             "WARNING: A working directory has already been parsed (%s). As overwriting has not been " +
                             "permitted, the current one (%s) will be ignored.",
-                            ((File) this.commands.get(CommandLineOption.WORKING_DIRECTORY)).getAbsolutePath(),
+                            ((File) this.get(CommandLineOption.WORKING_DIRECTORY)).getAbsolutePath(),
                             arg
                         )));
                     }
                 }
                 else
                 {
-                    this.commands.put(CommandLineOption.WORKING_DIRECTORY, new File(arg));
+                    this.put(CommandLineOption.WORKING_DIRECTORY, new File(arg));
                 }
             }
         }
 	}
 
+    /**
+     * This method is used to retrieve the working directory if it was not specified, and the potential useful files
+     * that it may contain if it was specified.
+     * Once retrieved, they are correctly put inside the Map.
+     */
     private void retrieveArgsFromWorkingDirectory()
     {
-        if (this.commands.get(CommandLineOption.WORKING_DIRECTORY) == null
-            && this.commands.get(CommandLineOption.C_FILE) == null)
+        if (this.get(CommandLineOption.WORKING_DIRECTORY) == null
+            && this.get(CommandLineOption.C_FILE) == null)
         {
             return;
         }
 
-        if (this.commands.get(CommandLineOption.WORKING_DIRECTORY) != null)
+        if (this.get(CommandLineOption.WORKING_DIRECTORY) != null)
         {
             //We got a working directory, let's check if there are some interesting stuff (like C files) inside.
-            final File workingDirectory = (File) this.commands.get(CommandLineOption.WORKING_DIRECTORY);
+            final File workingDirectory = (File) this.get(CommandLineOption.WORKING_DIRECTORY);
 
             for (final File file : Objects.requireNonNull(workingDirectory.listFiles()))
             {
                 if (this.isCFile(file.getAbsolutePath()))
                 {
-                    if (this.commands.containsKey(CommandLineOption.C_FILE))
+                    if (this.containsKey(CommandLineOption.C_FILE))
                     {
-                        if ((boolean) this.commands.getOrDefault(CommandLineOption.OVERWRITE, false))
+                        if ((boolean) this.getOrDefault(CommandLineOption.OVERWRITE, false))
                         {
                             System.out.println(Color.getYellowMessage(String.format(
                                 "WARNING: A .c file has already been parsed (%s). As overwriting has been permitted, " +
                                 "the old one will be replaced by the new one (%s).",
-                                ((File) this.commands.get(CommandLineOption.C_FILE)).getAbsolutePath(),
+                                ((File) this.get(CommandLineOption.C_FILE)).getAbsolutePath(),
                                 file.getAbsolutePath()
                             )));
 
-                            this.commands.put(CommandLineOption.C_FILE, file);
+                            this.put(CommandLineOption.C_FILE, file);
                         }
                         else
                         {
                             System.out.println(Color.getYellowMessage(String.format(
                                 "WARNING: A .c file has already been parsed (%s). As overwriting has not been " +
                                 "permitted, the current one (%s) will be ignored.",
-                                ((File) this.commands.get(CommandLineOption.C_FILE)).getAbsolutePath(),
+                                ((File) this.get(CommandLineOption.C_FILE)).getAbsolutePath(),
                                 file.getAbsolutePath()
                             )));
                         }
                     }
                     else
                     {
-                        this.commands.put(CommandLineOption.C_FILE, file);
+                        this.put(CommandLineOption.C_FILE, file);
                     }
                 }
             }
@@ -215,28 +270,47 @@ public class CommandLineParser
                 We got a C file, but we don't have any working directory yet.
                 Let's build one from the C file location.
              */
-            final File cFile = (File) this.commands.get(CommandLineOption.C_FILE);
+            final File cFile = (File) this.get(CommandLineOption.C_FILE);
             final String workingDirectoryPath = cFile.getParent();
 
             if (workingDirectoryPath != null)
             {
-                this.commands.put(CommandLineOption.WORKING_DIRECTORY, new File(workingDirectoryPath));
+                this.put(CommandLineOption.WORKING_DIRECTORY, new File(workingDirectoryPath));
             }
         }
     }
 
+    /**
+     * This method is used to verify whether the information currently contained in the Map is sufficient for the
+     * program to work.
+     *
+     * @return true if the required elements are present, false otherwise.
+     */
     private boolean verifyArgs()
     {
-        return this.commands.get(CommandLineOption.WORKING_DIRECTORY) != null
-                && this.commands.get(CommandLineOption.C_FILE) != null;
+        return this.get(CommandLineOption.WORKING_DIRECTORY) != null
+                && this.get(CommandLineOption.C_FILE) != null;
     }
 
+    /**
+     * This method checks whether the given argument is (apparently, at least) a correct C file.
+     * Here, apparently means that any existing file with the extensions ".c" will be considered as a correct C file.
+     *
+     * @param arg the argument to check.
+     * @return true if the argument is apparently a correct C file, false otherwise.
+     */
     private boolean isCFile(final String arg)
     {
 		return arg.endsWith(".c")
 				&& new File(arg).isFile();
 	}
 
+    /**
+     * This method checks whether the given argument is a path to an existing directory.
+     *
+     * @param arg the argument to check.
+     * @return true if the argument is indeed a path to an existing directory, false otherwise.
+     */
     private boolean isDir(final String arg)
     {
         return new File(arg).isDirectory();

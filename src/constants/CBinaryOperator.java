@@ -2,18 +2,18 @@ package constants;
 
 import org.eclipse.cdt.core.dom.ast.IASTBinaryExpression;
 
+/**
+ * Name:        CBinaryOperator.java
+ * Content:	    This enum defines the binary operators supported by Eclipse-CDT along with their actual
+ * 				(textual) representation, and some utility methods useful for converting the Eclipse-CDT types
+ * 				to these operators and conversely.
+ * Author:      Quentin Nivon
+ * Email:       quentin.nivon@uol.de
+ * Creation:    26/02/26
+ */
+
 public enum CBinaryOperator
 {
-	/**
-	 * Name:        CBinaryOperator.java
-	 * Content:	    This enum defines the binary operators supported by Eclipse-CDT along with their actual
-	 * 				(textual) representation, and some utility methods useful for converting the Eclipse-CDT types
-	 * 				to these operators and conversely.
-	 * Author:      Quentin Nivon
-	 * Email:       quentin.nivon@uol.de
-	 * Creation:    26/02/26
-	 */
-
 	ASSIGNMENT("=", IASTBinaryExpression.op_assign),
 	BINARY_AND("&", IASTBinaryExpression.op_binaryAnd),
 	BINARY_AND_ASSIGNMENT("&=", IASTBinaryExpression.op_binaryAndAssign),

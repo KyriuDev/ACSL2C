@@ -6,21 +6,21 @@ import org.eclipse.cdt.core.dom.ast.cpp.*;
 
 import java.util.Arrays;
 
+/**
+ * Name:        Visitors.java
+ * Content:	    Multiple kinds of AST visitors as implemented in "org.eclipse.cdt.core.dom.ast.ASTVisitor.java".
+ * 				If I understood correctly, this is a kind of "linear" traversal, which does not exactly suits our
+ * 				needs. It will probably not be used except potentially for testing purposes.
+ * 				The class separates between C and C++ visitors (if any), reason why some methods are not callable
+ * 				depending on the used visitors (this is also a way to verify that the concept has been correctly
+ * 				understood).
+ * Author:      Quentin Nivon
+ * Email:       quentin.nivon@uol.de
+ * Creation:    25/02/26
+ */
+
 public class Visitors
 {
-	/**
-	 * Name:        Visitors.java
-	 * Content:	    Multiple kinds of AST visitors as implemented in "org.eclipse.cdt.core.dom.ast.ASTVisitor.java".
-	 * 				If I understood correctly, this is a kind of "linear" traversal, which does not exactly suits our
-	 * 			    needs. It will probably not be used except potentially for testing purposes.
-	 * 			    The class separates between C and C++ visitors (if any), reason why some methods are not callable
-	 * 			    depending on the used visitors (this is also a way to verify that the concept has been correctly
-	 * 			    understood).
-	 * Author:      Quentin Nivon
-	 * Email:       quentin.nivon@uol.de
-	 * Creation:    25/02/26
-	 */
-
 	//Constructors
 
 	private Visitors()

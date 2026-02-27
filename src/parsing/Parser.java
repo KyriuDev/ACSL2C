@@ -5,6 +5,7 @@ import org.eclipse.cdt.core.dom.ast.gnu.c.GCCLanguage;
 import org.eclipse.cdt.core.index.IIndex;
 import org.eclipse.cdt.core.model.ILanguage;
 import org.eclipse.cdt.core.parser.*;
+import org.eclipse.core.runtime.CoreException;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -12,20 +13,20 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
 
+/**
+ * Name:        Parser.java
+ * Content:     This class aims at parsing a given C program and at returning its corresponding AST.
+ *				It basically wraps the parser of Eclipse-CDT with utility functions and hides the details to the
+ * 				end user.
+ * 				Note that the implementation of the parser in Eclipse-CDT does not seem to consider the comments.
+ * 				TODO: Manage the (ACSL) comments with SYNTAX
+ * Author:      Quentin Nivon
+ * Email:       quentin.nivon@uol.de
+ * Creation:    25/02/26
+ */
+
 public class Parser
 {
-	/**
-	 * Name:        Parser.java
-	 * Content:     This class aims at parsing a given C program and at returning its corresponding AST.
-	 * 				It basically wraps the parser of Eclipse-CDT with utility functions and hides the details to the
-	 * 				end user.
-	 * 				Note that the implementation of the parser in Eclipse-CDT seems not to consider the comments.
-	 * 				TODO: Manage the (ACSL) comments with SYNTAX
-	 * Author:      Quentin Nivon
-	 * Email:       quentin.nivon@uol.de
-	 * Creation:    25/02/26
-	 */
-
 	private final String program;
 
 	//Constructors
@@ -63,14 +64,25 @@ public class Parser
 
 	//Public methods
 
-	public IASTTranslationUnit parse() throws Exception
+	public IASTTranslationUnit parse() throws CoreException
 	{
 		return this.parse(this.program.toCharArray());
 	}
 
 	//Private methods
 
-	private IASTTranslationUnit parse(final char[] programToParse) throws Exception
+	/**
+	 * This method aims at parsing a C program using the Eclipse-CDT plugin facilities.
+	 * It corresponds to Listing 2 of the paper "Using the Eclipse C/C++ Development Tooling as a Robust, Fully
+	 * Functional, Actively Maintained, Open Source C++ Parser" from Piatov, Janes, Sillitti and Succi.
+	 * The only change that I made to it is the use of "GCCLanguage" instead of "GPPLanguage" in the return statement.
+	 * I currently (27/02/26) do not know what all the given options are used for, but it seems to work.
+	 *
+	 * @param programToParse the array of chars corresponding to the program to parse
+	 * @return an IASTTranslationUnit, the root node of the generated AST
+	 * @throws CoreException if the parsing of the C file fails.
+	 */
+	private IASTTranslationUnit parse(final char[] programToParse) throws CoreException
 	{
 		final FileContent fileContent = FileContent.create("/Path/ToResolveIncludePaths.cpp", programToParse);
 		final Map<String, String> macroDefinitions = new HashMap<>();
