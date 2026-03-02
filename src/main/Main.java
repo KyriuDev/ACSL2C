@@ -1,11 +1,18 @@
 package main;
 
 import constants.CProgram;
+import dto.CComment;
 import misc.CommandLineParser;
+import misc.Pair;
+import org.eclipse.cdt.core.dom.ast.IASTNode;
 import org.eclipse.cdt.internal.core.dom.parser.c.CASTTranslationUnit;
+import parsing.CommentsHandler;
 import parsing.Parser;
 import visitors.RecursiveVisitor;
+import visitors.Visitors;
 import writing.Writer;
+
+import java.util.Map;
 
 /**
  *    Name:        Main.java
@@ -26,12 +33,20 @@ public class Main
 
 		System.out.println("----------------- LINEAR PROGRAM -------------------\n");
 
-		//translationUnit.accept(Visitors.getCPrintVisitor());
+		translationUnit.accept(Visitors.getCPrintVisitor());
 
 		System.out.println("\n----------------- RECURSIVE PROGRAM -------------------\n");
 
 		final RecursiveVisitor recursiveVisitor = new RecursiveVisitor(translationUnit);
 		recursiveVisitor.printAST();
+
+		System.out.println("\n----------------- COMMENTS HANDLING -------------------\n");
+
+		final CommentsHandler commentsHandler = new CommentsHandler(translationUnit);
+		commentsHandler.computeCommentsPrecedingAndSucceedingNodes();
+		commentsHandler.displayMapping();
+
+		System.out.println("\n----------------- WRITING TO FILE -------------------\n");
 
 		final Writer writer = new Writer(translationUnit, commandLineParser);
 		writer.writeToFile();

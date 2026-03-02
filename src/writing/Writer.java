@@ -4,6 +4,7 @@ import constants.*;
 import exceptions.UnhandledElementException;
 import misc.CommandLineParser;
 import misc.Utils;
+import org.eclipse.cdt.core.dom.ast.IASTComment;
 import org.eclipse.cdt.core.dom.ast.IASTNode;
 import org.eclipse.cdt.internal.core.dom.parser.c.*;
 

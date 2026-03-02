@@ -3,6 +3,7 @@ package visitors;
 import org.eclipse.cdt.core.dom.ast.*;
 import org.eclipse.cdt.core.dom.ast.c.ICASTDesignator;
 import org.eclipse.cdt.core.dom.ast.cpp.*;
+import org.eclipse.cdt.internal.core.dom.parser.ASTAmbiguousNode;
 
 import java.util.Arrays;
 

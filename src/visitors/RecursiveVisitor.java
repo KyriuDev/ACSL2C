@@ -1,14 +1,10 @@
 package visitors;
 
-import constants.CBinaryOperator;
-import constants.CDeclarationSpecifier;
-import constants.CType;
-import constants.CUnaryOperator;
+import constants.*;
+import exceptions.UnhandledElementException;
 import misc.Utils;
 import org.eclipse.cdt.core.dom.ast.*;
 import org.eclipse.cdt.internal.core.dom.parser.c.*;
-
-import java.util.Arrays;
 
 /**
  * Name:        RecursiveVisitor.java
@@ -33,14 +29,55 @@ public class RecursiveVisitor
 
 	//Public methods
 
-	public void printAST()
+	public void printAST() throws UnhandledElementException
 	{
 		final StringBuilder builder = new StringBuilder();
+		this.printComments(this.rootNode);
 		this.printAST(this.rootNode, 0, builder);
 		System.out.println(builder);
 	}
 
 	//Private methods
+
+	/**
+	 * This method analyses the root node of the AST (which should normally be of type IASTTranslationUnit) and outputs
+	 * on the standard output all the comments that were found in the program, along with their information (offset,
+	 * length, starting line number, ending line number).
+	 *
+	 * @param rootNode the root node of the AST;
+	 * @throws UnhandledElementException if the root node is not an IASTTranslationUnit.
+	 */
+	private void printComments(final IASTNode rootNode) throws UnhandledElementException
+	{
+		if (!(rootNode instanceof IASTTranslationUnit))
+		{
+			throw new UnhandledElementException(
+				Color.getRedMessage(String.format(
+					"The root node of the given AST should be of type IASTTranslationUnit, but we got |%s|!",
+					rootNode.toString()
+				))
+			);
+		}
+
+		final IASTComment[] comments = ((IASTTranslationUnit) rootNode).getComments();
+
+		System.out.println("---------COMMENTS-----------");
+		System.out.printf("%d comments were found:%n", comments.length);
+
+		for (final IASTComment comment : comments)
+		{
+			System.out.printf(
+				"\t- Comment \"%s\" has offset %d, length %d, starting line number %d, and ending line number %d%n",
+				comment.toString(),
+				comment.getFileLocation().getNodeOffset(),
+				comment.getFileLocation().getNodeLength(),
+				comment.getFileLocation().getStartingLineNumber(),
+				comment.getFileLocation().getEndingLineNumber()
+			);
+		}
+
+		System.out.println("---------END COMMENTS----------\n");
+	}
 
 	/**
 	 * This method recursively traverses the AST in a depth-first way and store the information of the encountered
@@ -58,9 +95,10 @@ public class RecursiveVisitor
 
 		builder.append(Utils.addLeadingTabulations(depth))
 				.append(String.format(
-					"- Node \"%s\" (%s) has ",
+					"- Node \"%s\" (%s%s) has ",
 					nodeData.isEmpty() ? node.toString() : nodeData,
-					!nodeData.isEmpty() ? node.toString() : ""
+					(!nodeData.isEmpty() ? node.toString() + " " : ""),
+					node.getFileLocation() == null ? "" : "lines " + node.getFileLocation().getStartingLineNumber() + " to " + node.getFileLocation().getEndingLineNumber()
 				));
 
 		if (node.getChildren() != null

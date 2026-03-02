@@ -1,5 +1,8 @@
 package misc;
 
+import org.eclipse.cdt.core.dom.ast.IASTFileLocation;
+import org.eclipse.cdt.core.dom.ast.IASTNode;
+
 /**
  * Name:        Utils.java
  * Content:	    This class defines several utility functions used in the context of this project.
@@ -14,6 +17,30 @@ public class Utils
 	private Utils()
 	{
 
+	}
+
+	/**
+	 * This function returns the starting line number of the IASTNode given as parameter, or -1 if the given node does
+	 * not have any line number associated to it.
+	 *
+	 * @param node the node to retrieve the starting line number from.
+	 * @return the starting line number of the given node if available, -1 otherwise.
+	 */
+	public static int getStartingLineNumberOf(final IASTNode node)
+	{
+		return node.getFileLocation() == null ? -1 : node.getFileLocation().getStartingLineNumber();
+	}
+
+	/**
+	 * This function returns the ending line number of the IASTNode given as parameter, or -1 if the given node does
+	 * not have any line number associated to it.
+	 *
+	 * @param node the node to retrieve the ending line number from.
+	 * @return the ending line number of the given node if available, -1 otherwise.
+	 */
+	public static int getEndingLineNumberOf(final IASTNode node)
+	{
+		return node.getFileLocation() == null ? -1 : node.getFileLocation().getEndingLineNumber();
 	}
 
 	/**

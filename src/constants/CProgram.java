@@ -112,13 +112,17 @@ public class CProgram
 	;
 
 	public static final String PROGRAM_TEST_PARSING_WRITING =
+		"/*\n" +
+		"    External function used for non-deterministic\n" +
+		"    ints generation.\n" +
+		"*/\n" +
 		"extern int __VERIFIER_nondet_int(void);\n" +
 		"\n" +
 		"//@ requires y>=0;\n" +
 		"//@ ensures \\result = \\old(x) + \\old(y);\n" +
 		"int sum(int x, int y){\n" +
 			"while (true) {\n" +
-				"x++; y--;\n" +
+				"x++; y--; //test\n" +
 			"}\n" +
 			"return x;\n" +
 		"}\n" +
@@ -127,7 +131,9 @@ public class CProgram
 		"//@ ensures \\result = \\old(y) - \\old(x);\n" +
 		"int diff(int x, int y){\n" +
 			"while (x>0) {\n" +
-				"x--; y--;\n" +
+				"/*\n" +
+				"dégueulasse ceci dit\n" +
+				"*/\n" +
 			"}\n" +
 			"return y + x;\n" +
 		"}\n" +
