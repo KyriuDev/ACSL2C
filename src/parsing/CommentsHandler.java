@@ -3,7 +3,6 @@ package parsing;
 import constants.ACSLKeyword;
 import constants.CCommentNature;
 import constants.CCommentType;
-import constants.Str;
 import dto.CComment;
 import misc.Pair;
 import misc.Utils;
@@ -12,7 +11,9 @@ import org.eclipse.cdt.core.dom.ast.IASTFileLocation;
 import org.eclipse.cdt.core.dom.ast.IASTNode;
 import org.eclipse.cdt.core.dom.ast.IASTTranslationUnit;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -29,7 +30,8 @@ import java.util.Map;
 
 public class CommentsHandler
 {
-	private final Map<CComment, Pair<IASTNode, IASTNode>> commentsPrecedingAndSucceedingNodes;
+	private final Map<CComment, Surrounding> commentsSurroundings;
+	private final Map<IASTNode, List<CComment>> commentsFollowingNodes;
 	private final IASTTranslationUnit rootNode;
 
 	//Constructors
@@ -37,10 +39,67 @@ public class CommentsHandler
 	public CommentsHandler(final IASTTranslationUnit rootNode)
 	{
 		this.rootNode = rootNode;
-		this.commentsPrecedingAndSucceedingNodes = new HashMap<>();
+		this.commentsSurroundings = new HashMap<>();
+		this.commentsFollowingNodes = new HashMap<>();
 	}
 
 	//Public methods
+
+	/**
+	 * This method returns the list of comments that appear immediately after a given IASTNode.
+	 * It is used to know when a comment should be dumped to the file.
+	 * It somehow reverses and aggregates the information stored in commentsSurroundings.
+	 * If this information is sufficient to properly write the comments back to their exact position in the C program,
+	 * it probably means that the notion of surrounding is too powerful and could probably be replaced by something
+	 * weaker, to lower the overall complexity of calling this class.
+	 *
+	 * @return a map whose keys are IASTNodes, and values are the list of comments that immediately follow these nodes.
+	 */
+	public Map<IASTNode, List<CComment>> getCommentsFollowingNodes()
+	{
+		if (this.commentsFollowingNodes.isEmpty()
+			&& !this.commentsSurroundings.isEmpty())
+		{
+			//Comments following nodes have not been computed yet.
+			for (final CComment comment : this.commentsSurroundings.keySet())
+			{
+				final Surrounding surrounding = this.commentsSurroundings.get(comment);
+				final List<CComment> commentsAfterNode = this.commentsFollowingNodes.computeIfAbsent(
+					surrounding.getClosestPrecedingNode(),
+					l -> new ArrayList<>()
+				);
+				commentsAfterNode.add(comment);
+			}
+		}
+
+		return this.commentsFollowingNodes;
+	}
+
+	/**
+	 * This method is used to find the leading comments of the C program, if any.
+	 * Such comments are comments that appear at the very beginning of the C program, before anything else, and which
+	 * must thus be written first, before the C program itself.
+	 *
+	 * @return the list of leading comments, if any, or an empty list otherwise.
+	 */
+	public List<CComment> getLeadingComments()
+	{
+		final ArrayList<CComment> list = new ArrayList<>();
+
+		for (final CComment comment : this.commentsSurroundings.keySet())
+		{
+			final Surrounding surrounding = this.commentsSurroundings.get(comment);
+
+			if (surrounding.getClosestBoundary() instanceof IASTTranslationUnit
+				&& surrounding.getClosestPrecedingNode() == null)
+			{
+				//The comment is at the topmost level of the C program and does not have any preceding statement
+				list.add(comment);
+			}
+		}
+
+		return list;
+	}
 
 	/**
 	 * This method computes the preceding and succeeding IASTNodes of each parsed comment of the given C program.
@@ -50,7 +109,7 @@ public class CommentsHandler
 	 *
 	 * @return the class variable "commentsPrecedingAndSucceedingNodes".
 	 */
-	public Map<CComment, Pair<IASTNode, IASTNode>> computeCommentsPrecedingAndSucceedingNodes()
+	public Map<CComment, Surrounding> computeCommentsPrecedingAndSucceedingNodes()
 	{
 		for (final IASTComment comment : this.rootNode.getComments())
 		{
@@ -67,11 +126,12 @@ public class CommentsHandler
 				commentContent
 			);
 
-			final Pair<IASTNode, IASTNode> beforeAndAfterNodes = this.getBeforeAndAfterNodesOf(cComment);
-			this.commentsPrecedingAndSucceedingNodes.put(cComment, beforeAndAfterNodes);
+			final Surrounding beforeAndAfterNodes = this.getBeforeAndAfterNodesOf(cComment);
+
+			this.commentsSurroundings.put(cComment, beforeAndAfterNodes);
 		}
 
-		return this.commentsPrecedingAndSucceedingNodes;
+		return this.commentsSurroundings;
 	}
 
 	/**
@@ -81,9 +141,9 @@ public class CommentsHandler
 	 *
 	 * @return the class variable "commentsPrecedingAndSucceedingNodes".
 	 */
-	public Map<CComment, Pair<IASTNode, IASTNode>> getCommentsPrecedingAndSucceedingNodes()
+	public Map<CComment, Surrounding> getCommentsSurroundings()
 	{
-		return this.commentsPrecedingAndSucceedingNodes;
+		return this.commentsSurroundings;
 	}
 
 	/**
@@ -94,7 +154,7 @@ public class CommentsHandler
 	 */
 	public void displayMapping()
 	{
-		if (this.commentsPrecedingAndSucceedingNodes.isEmpty())
+		if (this.commentsSurroundings.isEmpty())
 		{
 			System.out.println("No mapping was found between the comments of the programs and some of its nodes.");
 			return;
@@ -102,15 +162,15 @@ public class CommentsHandler
 
 		System.out.println("The following mappings between comments and program nodes were found:\n");
 
-		for (final CComment comment : this.commentsPrecedingAndSucceedingNodes.keySet())
+		for (final CComment comment : this.commentsSurroundings.keySet())
 		{
-			final Pair<IASTNode, IASTNode> precedingAndSucceedingNodes = this.commentsPrecedingAndSucceedingNodes.get(comment);
+			final Surrounding precedingAndSucceedingNodes = this.commentsSurroundings.get(comment);
 
 			System.out.printf(
 				"\t- Comment \"%s\" is preceded by node \"%s\" and succeeded by node \"%s\".\n%n",
 				comment.getContent(),
-				precedingAndSucceedingNodes.getFirstElement() == null ? "null" : precedingAndSucceedingNodes.getFirstElement().toString(),
-				precedingAndSucceedingNodes.getSecondElement() == null ? "null" : precedingAndSucceedingNodes.getSecondElement().toString()
+				precedingAndSucceedingNodes.getClosestPrecedingNode() == null ? "null" : precedingAndSucceedingNodes.getClosestPrecedingNode().toString(),
+				precedingAndSucceedingNodes.getClosestSucceedingNode() == null ? "null" : precedingAndSucceedingNodes.getClosestSucceedingNode().toString()
 			);
 		}
 	}
@@ -135,17 +195,47 @@ public class CommentsHandler
 	 * @param comment the comment to compute preceding and succeeding IASTNodes for.
 	 * @return a pair containing the preceding and the succeeding IASTNodes of the given comment.
 	 */
-	private Pair<IASTNode, IASTNode> getBeforeAndAfterNodesOf(final CComment comment)
+	private Surrounding getBeforeAndAfterNodesOf(final CComment comment)
 	{
+		//First, we compute the closest boundary of our comment
 		final IASTNode commentClosestBoundary = this.getClosestBoundaryOf(comment, this.rootNode, this.rootNode);
-
 		System.out.printf("- Closest boundary of comment \"%s\" is %s.%n", comment.getContent(), commentClosestBoundary);
-		//final IASTNode closestPrecedingNode = comment.getOriginalSourceCodeStartingLine() == 1 ? null : this.getClosestPrecedingNode(comment, this.rootNode, this.rootNode);
-		//final IASTNode closestSucceedingNode = this.getClosestSucceedingNode(comment, this.rootNode, this.rootNode);
 
-		return new Pair<>(null, null);
+		//Then, we retrieve the preceding and succeeding statements of our comment inside its boundary
+		final Pair<IASTNode, IASTNode> closestPrecedindAndSucceedingNodes = this.getClosestPrecedingAndSucceedingNodesOf(comment, commentClosestBoundary);
+
+		return new Surrounding(
+			commentClosestBoundary,
+			closestPrecedindAndSucceedingNodes.getFirstElement(),
+			closestPrecedindAndSucceedingNodes.getSecondElement()
+		);
 	}
 
+	/**
+	 * This method is used to compute the closest boundary of the given comment.
+	 * <p>
+	 * By closest boundary, we mean the closest node that encompasses the comment.
+	 * If the comment is not at the top level of the C program, its closest boundary will be the root node of the AST,
+	 * i.e., the IASTTranslationUnit.
+	 * Otherwise, if the comment is inside a function, or a complex statement (if, while, etc.), the closest structure
+	 * encompassing it will be returned.
+	 * For instance, the closest boundary of "//Comment to get boundary of" while be the body of the while loop.
+	 * Note that in this case, the function "main()" is also a boundary of the comment, but not the closest one.
+	 * <p>
+	 * int main(){
+	 *     while (true){
+	 *         //Comment to get boundary of
+	 *     }
+	 * }
+	 * <p>
+	 * In the not-so-common case of single line comments written on the same line as a statement, right next to it, the
+	 * boundary might not be really meaningful, but this will be handled later.
+	 *
+	 * @param comment the comment to get the boundary of.
+	 * @param currentClosestBoundary the current closest boundary of the comment, the root node of the AST by default.
+	 * @param currentNode the current to check.
+	 * @return the IASTNode that is the closest boundary of the given comment.
+	 */
 	private IASTNode getClosestBoundaryOf(final CComment comment,
 										  final IASTNode currentClosestBoundary,
 										  final IASTNode currentNode)
@@ -165,11 +255,9 @@ public class CommentsHandler
 		if (currentNode.getFileLocation().getStartingLineNumber() <= comment.getOriginalSourceCodeStartingLine()
 			&& currentNode.getFileLocation().getEndingLineNumber() >= comment.getOriginalSourceCodeEndingLine())
 		{
-			//System.out.println("boundary found");
 			//We found a boundary for our comment, let's check if it is at least as good as the one we already have.
 			if (this.candidateIsBetterThanCurrentBoundary(currentNode, currentClosestBoundary))
 			{
-				//System.out.println("better boundary found");
 				//The current node is better than our current boundary, let's go deeper with this new boundary
 				if (currentNode.getChildren() == null
 					|| currentNode.getChildren().length == 0)
@@ -200,6 +288,14 @@ public class CommentsHandler
 		return currentClosestBoundary;
 	}
 
+	/**
+	 * This method is a utility method aiming at assessing whether a given candidate node would be a better closest
+	 * boundary than the current closest boundary.
+	 *
+	 * @param candidate the candidate closest boundary.
+	 * @param boundary the current closest boundary.
+	 * @return true if the candidate is better than the current boundary, false otherwise.
+	 */
 	private boolean candidateIsBetterThanCurrentBoundary(final IASTNode candidate,
 														 final IASTNode boundary)
 	{
@@ -212,97 +308,183 @@ public class CommentsHandler
 			&& candidate.getFileLocation().getEndingLineNumber() <= boundary.getFileLocation().getEndingLineNumber();
 	}
 
-	private IASTNode getClosestPrecedingNode(final CComment comment,
-											 final IASTNode currentClosestPrecedingNode,
-											 final IASTNode currentNode)
+	/**
+	 * This method returns the closest preceding and succeeding nodes of the given comment, given the closest boundary
+	 * of that comment.
+	 * A null preceding node means that the comment is the first "statement" of the boundary, while a null succeeding
+	 * node means that it is the last one.
+	 *
+	 * @param comment the comment to get the preceding/succeeding nodes of.
+	 * @param closestBoundary the closest boundary of the comment.
+	 * @return a pair containing the closest preceding and succeeding nodes of the given comment, if any.
+	 */
+	private Pair<IASTNode, IASTNode> getClosestPrecedingAndSucceedingNodesOf(final CComment comment,
+																			 final IASTNode closestBoundary)
 	{
-		final int currentNodeStartingLine = Utils.getStartingLineNumberOf(currentNode);
-		final int currentNodeEndingLine = Utils.getEndingLineNumberOf(currentNode);
-
-		//If our current node does not have line number information, we cannot rely on it to attach the comment.
-		if (currentNodeStartingLine == -1
-			|| currentNodeEndingLine == -1)
-		{
-			return currentClosestPrecedingNode;
-		}
-
-		if (comment.getOriginalSourceCodeStartingLine() >= currentNodeStartingLine
-			&& comment.getOriginalSourceCodeEndingLine() <= currentNodeEndingLine)
+		if (!Utils.iastNodeHasChildren(closestBoundary))
 		{
 			/*
-				The comment belongs to the current node, although we do not precisely know where => we try to get more
-				fine-grained information.
+				If the closest boundary does not contain any statement, then its body is composed uniquely of the
+				comment.
+				For instance:
+				while (true){
+					//My body is only composed of a comment!
+				}
+				Thus, the closest preceding and succeeding nodes are the boundary itself.
+				Note that this may also be the case if the comment is a single line comment that is on the same line
+				as a statement, for instance:
+										int x = 0; //My comment is on the same line
+				In such a case, the closest boundary of the comment might be erroneous, in the sense that its
+				computation might have been too far.
+				In the given example, the computed closest boundary is "x" instead of the full statement.
+				Thus, we correct it.
 			 */
-			IASTNode closestChild = null;
 
-			for (final IASTNode child : currentNode.getChildren())
+			if (comment.isSingleLineComment()
+				&& comment.getOriginalSourceCodeStartingLine() == closestBoundary.getFileLocation().getStartingLineNumber()
+				&& comment.getOriginalSourceCodeStartingLine() == closestBoundary.getFileLocation().getEndingLineNumber())
 			{
-				if (closestChild == null)
-				{
-					closestChild = this.getClosestPrecedingNode(comment, child, child);
-				}
-				else
-				{
-					final IASTNode currentClosestCandidate = this.getClosestPrecedingNode(comment, currentNode, child);
-
-					if (currentClosestCandidate.getFileLocation().getEndingLineNumber()
-						> closestChild.getFileLocation().getEndingLineNumber())
-					{
-						closestChild = currentClosestCandidate;
-					}
-				}
-			}
-
-			if (closestChild == null)
-			{
-				if (currentClosestPrecedingNode.getFileLocation().getStartingLineNumber()
-					> currentNode.getFileLocation().getStartingLineNumber())
-				{
-					return currentClosestPrecedingNode;
-				}
-				else
-				{
-					return currentNode;
-				}
+				/*
+					We correct the boundary by going upwards in the tree until reaching a node that does not start on
+					the same line as our boundary, or that does not end on the same line as our boundary.
+				 */
+				final IASTNode correctBoundary = this.correctBoundary(closestBoundary);
+				return new Pair<>(correctBoundary, correctBoundary);
 			}
 			else
 			{
-				return null;
+				return new Pair<>(closestBoundary, closestBoundary);
 			}
-		}
-		else if (comment.getOriginalSourceCodeStartingLine() >= currentNodeEndingLine)
-		{
-			/*
-				The comment appears after the current node, so its closest preceding node is the closest between the
-				current node and the currentClosestPrecedingNode.
-			 */
-			if (currentClosestPrecedingNode.getFileLocation().getEndingLineNumber() > currentNodeEndingLine)
-			{
-				return currentClosestPrecedingNode;
-			}
-			else
-			{
-				return currentNode;
-			}
-		}
-		else if (comment.getOriginalSourceCodeEndingLine() <= currentNodeStartingLine)
-		{
-			//The comment appears before the current node => we went too far, return the currentClosestPrecedingNode.
-			return currentClosestPrecedingNode;
 		}
 		else
 		{
 			/*
-				The comment starts before the current node and ends after it.
+				If the closest boundary contain statements, we know that these statements cannot encompass our comment
+				by definition, as they would otherwise be the closest boundary of the comment.
+				Thus, we can deduce that our comment lies between two statements of the current boundary, so we only
+				need to check the line numbers of the children of the boundary to get the position of the comment, and
+				consequently its preceding/succeeding nodes.
+				More precisely, we look for the statement whose end is the closest to the start of our comment, and for
+				the statement whose start is the closest to the end of our comment.
 			 */
-			throw new RuntimeException("Is this even possible ????????");
+			IASTNode closestPrecedingNode = null;
+			IASTNode closestSucceedingNode = null;
+
+			for (final IASTNode child : closestBoundary.getChildren())
+			{
+				final int childStartingLine = Utils.getStartingLineNumberOf(child);
+				final int childEndingLine = Utils.getEndingLineNumberOf(child);
+
+				if (childEndingLine != -1)
+				{
+					if (childEndingLine <= comment.getOriginalSourceCodeStartingLine())
+					{
+						//The child is before our comment, check if it is a better candidate than closestPrecedingNode
+						if (closestPrecedingNode == null)
+						{
+							closestPrecedingNode = child;
+						}
+						else
+						{
+							if (childEndingLine >= closestPrecedingNode.getFileLocation().getEndingLineNumber())
+							{
+								//The child is indeed a better candidate than closestPrecedingNode
+								closestPrecedingNode = child;
+							}
+						}
+					}
+				}
+
+				if (childStartingLine != -1)
+				{
+					if (childStartingLine >= comment.getOriginalSourceCodeEndingLine())
+					{
+						//The child is after our comment, check if it is a better candidate than closestSucceedingNode
+						if (closestSucceedingNode == null)
+						{
+							closestSucceedingNode = child;
+						}
+						else
+						{
+							if (childStartingLine < closestSucceedingNode.getFileLocation().getStartingLineNumber())
+							{
+								//The child is indeed a better candidate than closestSucceedingNode
+								closestSucceedingNode = child;
+							}
+						}
+					}
+				}
+			}
+
+			return new Pair<>(closestPrecedingNode, closestSucceedingNode);
 		}
 	}
 
-	private IASTNode getClosestSucceedingNode(final CComment comment,
-											  final IASTNode closestSucceedingNode,
-										      final IASTNode currentNode)
+	private IASTNode correctBoundary(final IASTNode closestBoundary)
 	{
-		return null;
+		final IASTNode parent = closestBoundary.getParent();
+
+		if (parent == null)
+		{
+			return closestBoundary;
+		}
+
+		final int parentStartingLineNumber = Utils.getStartingLineNumberOf(parent);
+		final int parentEndingLineNumber = Utils.getEndingLineNumberOf(parent);
+
+		if (parentStartingLineNumber == -1
+			|| parentEndingLineNumber == -1
+			|| parentStartingLineNumber != closestBoundary.getFileLocation().getStartingLineNumber()
+			|| parentEndingLineNumber != closestBoundary.getFileLocation().getEndingLineNumber())
+		{
+			//The parent is not as good as the current closest boundary
+			return closestBoundary;
+		}
+
+		//The parent is as good as the current closest boundary, so we recursively check its own parent.
+		return this.correctBoundary(parent);
+	}
+
+	/**
+	 * The surrounding of a comment consists in the elements that allow to precisely identify its location in the
+	 * program.
+	 * In our case, the surrounding is composed of the closest boundary of the comment, its closest preceding node,
+	 * and its closest succeeding node.
+	 */
+	public static class Surrounding
+	{
+		private final IASTNode closestBoundary;
+		private final IASTNode closestPrecedingNode;
+		private final IASTNode closestSucceedingNode;
+
+		//Constructors
+
+		public Surrounding(final IASTNode closestBoundary,
+						   final IASTNode closestPrecedingNode,
+						   final IASTNode closestSucceedingNode)
+		{
+			this.closestBoundary = closestBoundary;
+			this.closestPrecedingNode = closestPrecedingNode;
+			this.closestSucceedingNode = closestSucceedingNode;
+		}
+
+		//Public methods
+
+		public IASTNode getClosestBoundary()
+		{
+			return this.closestBoundary;
+		}
+
+		public IASTNode getClosestPrecedingNode()
+		{
+			return this.closestPrecedingNode;
+		}
+
+		public IASTNode getClosestSucceedingNode()
+		{
+			return this.closestSucceedingNode;
+		}
+
+		//Private methods
 	}
 }

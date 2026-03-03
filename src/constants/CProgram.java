@@ -111,10 +111,10 @@ public class CProgram
 		"}"
 	;
 
-	public static final String PROGRAM_TEST_PARSING_WRITING =
+	public static final String PROGRAM_TEST_PARSING_WRITING_V1 =
 		"/*\n" +
-		"    External function used for non-deterministic\n" +
-		"    ints generation.\n" +
+		"\tExternal function used for non-deterministic\n" +
+		"\tints generation.\n" +
 		"*/\n" +
 		"extern int __VERIFIER_nondet_int(void);\n" +
 		"\n" +
@@ -123,7 +123,9 @@ public class CProgram
 		"int sum(int x, int y){\n" +
 			"while (true) {\n" +
 				"x++; y--; //test\n" +
-			"}\n" +
+				"//test in loop\n" +
+			"}//test right after right curvy bracket (buggy, moved inside)\n" +
+			"//test between right curvy bracket and return\n" +
 			"return x;\n" +
 		"}\n" +
 		"\n" +
@@ -131,9 +133,57 @@ public class CProgram
 		"//@ ensures \\result = \\old(y) - \\old(x);\n" +
 		"int diff(int x, int y){\n" +
 			"while (x>0) {\n" +
-				"/*\n" +
-				"dégueulasse ceci dit\n" +
-				"*/\n" +
+				"x--; y--;/*\n" +
+				"\t\t\tdirty yet useful for testing\n" +
+				"\t\t*/\n" +
+			"}\n" +
+			"return y + x;\n" +
+		"}\n" +
+		"\n" +
+		"int main(){\n" +
+			"int x = __VERIFIER_nondet_int();\n" +
+			"int y = __VERIFIER_nondet_int();\n" +
+			"//@ assume(x >= 0 && y>= 0);\n" +
+			"\n" +
+			"2 * x;\n" +
+			"sum(x, y);\n" +
+			"int a = sum(x, y);\n" +
+			"int b = diff(x, y);\n" +
+			"int z = 2 * y;\n" +
+			"int w = -7894;\n" +
+			"_Bool bool = true;\n" +
+			"\n" +
+			"//@ assert((a-b) == z);\n" +
+			"\n" +
+			"return;\n" +
+		"}"
+	;
+
+	public static final String PROGRAM_TEST_PARSING_WRITING_V2 =
+		"/*\n" +
+		"\tExternal function used for non-deterministic\n" +
+		"\tints generation.\n" +
+		"*/\n" +
+		"extern int __VERIFIER_nondet_int(void);\n" +
+		"\n" +
+		"//@ requires y>=0;\n" +
+		"//@ ensures \\result = \\old(x) + \\old(y);\n" +
+		"int sum(int x, int y){\n" +
+			"while (true) {\n" +
+				"x++; y--; //test\n" +
+				"//test in loop\n" +
+			"}//test right after right curvy bracket (buggy, moved inside)\n" +
+			"//test between right curvy brack and return\n" +
+			"return x;\n" +
+		"}\n" +
+		"\n" +
+		"//@ requires x>=0;\n" +
+		"//@ ensures \\result = \\old(y) - \\old(x);\n" +
+		"int diff(int x, int y){\n" +
+			"while (x>0) {\n" +
+				"\t\t/*\n" +
+				"\t\t\tdirty yet useful for testing\n" +
+				"\t\t*/\n" +
 			"}\n" +
 			"return y + x;\n" +
 		"}\n" +

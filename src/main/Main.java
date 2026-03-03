@@ -28,7 +28,7 @@ public class Main
 	{
 		final CommandLineParser commandLineParser = new CommandLineParser(args);
 
-		final Parser parser = new Parser(CProgram.PROGRAM_TEST_PARSING_WRITING);
+		final Parser parser = new Parser(CProgram.PROGRAM_TEST_PARSING_WRITING_V1);
 		final CASTTranslationUnit translationUnit = (CASTTranslationUnit) parser.parse();
 
 		System.out.println("----------------- LINEAR PROGRAM -------------------\n");
@@ -48,7 +48,7 @@ public class Main
 
 		System.out.println("\n----------------- WRITING TO FILE -------------------\n");
 
-		final Writer writer = new Writer(translationUnit, commandLineParser);
+		final Writer writer = new Writer(translationUnit, commandLineParser, commentsHandler);
 		writer.writeToFile();
 	}
 }

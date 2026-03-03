@@ -1,17 +1,20 @@
 package writing;
 
 import constants.*;
+import dto.CComment;
 import exceptions.UnhandledElementException;
 import misc.CommandLineParser;
 import misc.Utils;
-import org.eclipse.cdt.core.dom.ast.IASTComment;
 import org.eclipse.cdt.core.dom.ast.IASTNode;
 import org.eclipse.cdt.internal.core.dom.parser.c.*;
+import parsing.CommentsHandler;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.nio.file.Paths;
+import java.util.Comparator;
+import java.util.List;
 
 /**
  * Name:        Writer.java
@@ -27,14 +30,17 @@ public class Writer
 	private static final String GENERATED_C_FILE_NAME = "generated.c";
 	private final CASTTranslationUnit astRootNode;
 	private final CommandLineParser commandLineParser;
+	private final CommentsHandler commentsHandler;
 
 	//Constructors
 
 	public Writer(final CASTTranslationUnit astRootNode,
-				  final CommandLineParser commandLineParser)
+				  final CommandLineParser commandLineParser,
+				  final CommentsHandler commentsHandler)
 	{
 		this.astRootNode = astRootNode;
 		this.commandLineParser = commandLineParser;
+		this.commentsHandler = commentsHandler;
 	}
 
 	//Public methods
@@ -81,6 +87,10 @@ public class Writer
 	 */
 	private void dumpFile(final PrintWriter printWriter) throws UnhandledElementException
 	{
+		//First, we write the eventual leading comments of the program
+		this.dumpLeadingComments(printWriter);
+
+		//Then, we write the program itself
 		boolean first = true;
 
 		for (final IASTNode iastNode : this.astRootNode.getChildren())
@@ -95,6 +105,24 @@ public class Writer
 				this.dumpSimpleDeclaration(printWriter, (CASTSimpleDeclaration) iastNode, 0);
 				printWriter.print(Char.RIGHT_BRACKET);
 				printWriter.print(Char.SEMI_COLON);
+
+				final List<CComment> commentsAppearingAfterDefinition = this.commentsHandler.getCommentsFollowingNodes().get(iastNode);
+
+				if (commentsAppearingAfterDefinition != null)
+				{
+					commentsAppearingAfterDefinition.sort(Comparator.comparingInt(CComment::getOriginalSourceCodeStartingLine));
+
+					if (commentsAppearingAfterDefinition.get(0).getOriginalSourceCodeStartingLine() != iastNode.getFileLocation().getEndingLineNumber())
+					{
+						printWriter.println();
+					}
+
+					for (final CComment comment : commentsAppearingAfterDefinition)
+					{
+						printWriter.println();
+						printWriter.print(comment.getContent());
+					}
+				}
 			}
 			else if (iastNode instanceof CASTFunctionDefinition)
 			{
@@ -110,8 +138,30 @@ public class Writer
 				);
 			}
 
-			printWriter.println();
+			if (this.commentsHandler.getCommentsFollowingNodes().get(iastNode) == null)
+			{
+				printWriter.println();
+			}
 			first = false;
+		}
+	}
+
+	/**
+	 * This method dumps the eventual leading comments of the C program given as input.
+	 * Their computation is handled by the CommentsHandler.
+	 * Note that in the current implementation of this function, the original disposition of these comments is not
+	 * supported, except for the order of appearance (e.g., line numbers can be different).
+	 *
+	 * @param printWriter the print writer used to write the program.
+	 */
+	private void dumpLeadingComments(final PrintWriter printWriter)
+	{
+		final List<CComment> leadingComments = this.commentsHandler.getLeadingComments();
+		leadingComments.sort(Comparator.comparingInt(CComment::getOriginalSourceCodeStartingLine));
+
+		for (final CComment comment : leadingComments)
+		{
+			printWriter.println(comment.getContent());
 		}
 	}
 
@@ -154,6 +204,25 @@ public class Writer
 		}
 
 		printWriter.print(Char.RIGHT_CURVY_BRACKET);
+
+		final List<CComment> commentsAppearingAfterDefinition = this.commentsHandler.getCommentsFollowingNodes().get(definition);
+
+		if (commentsAppearingAfterDefinition != null)
+		{
+			//There are some comments to be written
+			commentsAppearingAfterDefinition.sort(Comparator.comparingInt(CComment::getOriginalSourceCodeStartingLine));
+
+			if (commentsAppearingAfterDefinition.get(0).getOriginalSourceCodeStartingLine() != definition.getFileLocation().getEndingLineNumber())
+			{
+				printWriter.println();
+			}
+
+			for (final CComment comment : commentsAppearingAfterDefinition)
+			{
+				printWriter.println();
+				printWriter.print(comment.getContent());
+			}
+		}
 	}
 
 	/**
@@ -418,6 +487,20 @@ public class Writer
 				this.dumpDeclarationStatement(printWriter, (CASTDeclarationStatement) child, nbTabs);
 			}
 		}
+
+		final List<CComment> commentsAfterStatement = this.commentsHandler.getCommentsFollowingNodes().get(compoundStatement);
+
+		if (commentsAfterStatement != null)
+		{
+			commentsAfterStatement.sort(Comparator.comparingInt(CComment::getOriginalSourceCodeStartingLine));
+
+			for (final CComment comment : commentsAfterStatement)
+			{
+				printWriter.print(Utils.addLeadingTabulations(nbTabs));
+				printWriter.print(comment.getContent());
+				printWriter.println();
+			}
+		}
 	}
 
 	/**
@@ -459,8 +542,8 @@ public class Writer
 				{
 					throw new UnhandledElementException(
 						String.format(
-							"While object \"%s\" has multiple headers (CASTBinaryExpression/CASTIdExpression).",
-							child.toString()
+							"While object \"%s\" has multiple headers (CASTBinaryExpression/CASTIdExpression objects).",
+							child
 						)
 					);
 				}
@@ -487,8 +570,8 @@ public class Writer
 				{
 					throw new UnhandledElementException(
 						String.format(
-							"While object \"%s\" has multiple bodies (CASTCompoundStatement).",
-							child.toString()
+							"While object \"%s\" has multiple bodies (CASTCompoundStatement objects).",
+							child
 						)
 					);
 				}
@@ -497,7 +580,7 @@ public class Writer
 
 				this.dumpCompoundStatement(printWriter, (CASTCompoundStatement) child, nbTabs + 1);
 				printWriter.print(Utils.addLeadingTabulations(nbTabs));
-				printWriter.println(Char.RIGHT_CURVY_BRACKET);
+				printWriter.print(Char.RIGHT_CURVY_BRACKET);
 			}
 			else
 			{
@@ -507,6 +590,33 @@ public class Writer
 						child.toString()
 					)
 				);
+			}
+		}
+
+		final List<CComment> commentsAfterWhile = this.commentsHandler.getCommentsFollowingNodes().get(whileStatement);
+
+		if (commentsAfterWhile == null)
+		{
+			printWriter.println();
+		}
+		else
+		{
+			commentsAfterWhile.sort(Comparator.comparingInt(CComment::getOriginalSourceCodeStartingLine));
+			int nbTabsToConsider = 0;
+
+			if (commentsAfterWhile.get(0).getOriginalSourceCodeStartingLine() != whileStatement.getFileLocation().getEndingLineNumber())
+			{
+				printWriter.println();
+				nbTabsToConsider = nbTabs;
+			}
+
+			boolean first = true;
+
+			for (final CComment comment : commentsAfterWhile)
+			{
+				printWriter.print(Utils.addLeadingTabulations(first ? nbTabsToConsider : nbTabs));
+				printWriter.println(comment.getContent());
+				first = false;
 			}
 		}
 	}
@@ -738,7 +848,34 @@ public class Writer
 				);
 			}
 
-			printWriter.println(Char.SEMI_COLON);
+			printWriter.print(Char.SEMI_COLON);
+
+			final List<CComment> commentsAfterExpressionStatement = this.commentsHandler.getCommentsFollowingNodes().get(expressionStatement);
+
+			if (commentsAfterExpressionStatement == null)
+			{
+				printWriter.println();
+			}
+			else
+			{
+				commentsAfterExpressionStatement.sort(Comparator.comparingInt(CComment::getOriginalSourceCodeStartingLine));
+				int nbTabsToConsider = 0;
+
+				if (commentsAfterExpressionStatement.get(0).getOriginalSourceCodeStartingLine() != expressionStatement.getFileLocation().getEndingLineNumber())
+				{
+					printWriter.println();
+					nbTabsToConsider = nbTabs;
+				}
+
+				boolean first = true;
+
+				for (final CComment comment : commentsAfterExpressionStatement)
+				{
+					printWriter.print(Utils.addLeadingTabulations(first ? nbTabsToConsider : nbTabs));
+					printWriter.println(comment.getContent());
+					first = false;
+				}
+			}
 		}
 	}
 
@@ -849,7 +986,31 @@ public class Writer
 			}
 		}
 
-		printWriter.println(Char.SEMI_COLON);
+		printWriter.print(Char.SEMI_COLON);
+
+		final List<CComment> commentsAfterDeclaration = this.commentsHandler.getCommentsFollowingNodes().get(declarationStatement);
+
+		if (commentsAfterDeclaration != null)
+		{
+			commentsAfterDeclaration.sort(Comparator.comparingInt(CComment::getOriginalSourceCodeStartingLine));
+			int nbTabsToConsider = 0;
+
+			if (commentsAfterDeclaration.get(0).getOriginalSourceCodeStartingLine() != declarationStatement.getFileLocation().getEndingLineNumber())
+			{
+				printWriter.println();
+				nbTabsToConsider = nbTabs;
+			}
+
+			for (final CComment comment : commentsAfterDeclaration)
+			{
+				printWriter.print(Utils.addLeadingTabulations(nbTabsToConsider));
+				printWriter.println(comment.getContent());
+			}
+		}
+		else
+		{
+			printWriter.println();
+		}
 	}
 
 	/**

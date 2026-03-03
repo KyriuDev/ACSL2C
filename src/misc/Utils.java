@@ -19,6 +19,11 @@ public class Utils
 
 	}
 
+	public static boolean iastNodeHasChildren(final IASTNode iastNode)
+	{
+		return iastNode.getChildren() != null && iastNode.getChildren().length != 0;
+	}
+
 	/**
 	 * This function returns the starting line number of the IASTNode given as parameter, or -1 if the given node does
 	 * not have any line number associated to it.
