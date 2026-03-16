@@ -14,7 +14,7 @@ import java.util.Map;
 import java.util.Scanner;
 
 /**
- * Name:        Parser.java
+ * Name:        CParser.java
  * Content:     This class aims at parsing a given C program and at returning its corresponding AST.
  *				It basically wraps the parser of Eclipse-CDT with utility functions and hides the details to the
  * 				end user.
@@ -25,18 +25,18 @@ import java.util.Scanner;
  * Creation:    25/02/26
  */
 
-public class Parser
+public class CParser
 {
 	private final String program;
 
 	//Constructors
 
-	public Parser(final String program)
+	public CParser(final String program)
 	{
 		this.program = program;
 	}
 
-	public Parser(final File file)
+	public CParser(final File file)
 	{
 		final Scanner scanner;
 

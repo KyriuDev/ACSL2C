@@ -1,18 +1,17 @@
 package main;
 
-import constants.CProgram;
-import dto.CComment;
+import constants.c.CProgram;
 import misc.CommandLineParser;
-import misc.Pair;
-import org.eclipse.cdt.core.dom.ast.IASTNode;
 import org.eclipse.cdt.internal.core.dom.parser.c.CASTTranslationUnit;
+import parsing.ACSLParser;
 import parsing.CommentsHandler;
-import parsing.Parser;
+import parsing.CParser;
 import visitors.RecursiveVisitor;
 import visitors.Visitors;
 import writing.Writer;
 
-import java.util.Map;
+import java.util.Arrays;
+import java.util.Collections;
 
 /**
  *    Name:        Main.java
@@ -28,8 +27,8 @@ public class Main
 	{
 		final CommandLineParser commandLineParser = new CommandLineParser(args);
 
-		final Parser parser = new Parser(CProgram.PROGRAM_TEST_PARSING_WRITING_V1);
-		final CASTTranslationUnit translationUnit = (CASTTranslationUnit) parser.parse();
+		final CParser CParser = new CParser(CProgram.PROGRAM_1_WITH_ACSL_COMMENT);
+		final CASTTranslationUnit translationUnit = (CASTTranslationUnit) CParser.parse();
 
 		System.out.println("----------------- LINEAR PROGRAM -------------------\n");
 
@@ -45,6 +44,11 @@ public class Main
 		final CommentsHandler commentsHandler = new CommentsHandler(translationUnit);
 		commentsHandler.computeCommentsPrecedingAndSucceedingNodes();
 		commentsHandler.displayMapping();
+
+		System.out.println("\n----------------- GENERATING AST FROM JAVA -------------------\n");
+
+		final ACSLParser parser = new ACSLParser(Collections.singletonList(commentsHandler.getRandomComment()));
+		parser.parse();
 
 		System.out.println("\n----------------- WRITING TO FILE -------------------\n");
 

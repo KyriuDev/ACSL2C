@@ -1,7 +1,10 @@
 package dto;
 
-import constants.CCommentNature;
-import constants.CCommentType;
+import ast.AbstractSyntaxTree;
+import constants.Color;
+import constants.c.CCommentNature;
+import constants.c.CCommentType;
+import misc.Utils;
 
 /**
  * Name:        CComment.java
@@ -23,6 +26,7 @@ public class CComment
 	private final int originalSourceCodeStartingLine;
 	private final int originalSourceCodeEndingLine;
 	private final String content;
+	private AbstractSyntaxTree abstractSyntaxTree;
 
 	//Constructors
 
@@ -74,6 +78,32 @@ public class CComment
 	public String getContent()
 	{
 		return this.content;
+	}
+
+	public String getCleanContent()
+	{
+		return this.content.replaceAll("//", "")
+				.replaceAll("/\\*", "")
+				.replaceAll("\\*/", "")
+				.replaceAll("@", "");
+	}
+
+	public void setAbstractSyntaxTree(final AbstractSyntaxTree abstractSyntaxTree)
+	{
+		this.abstractSyntaxTree = abstractSyntaxTree;
+	}
+
+	public AbstractSyntaxTree getAbstractSyntaxTree()
+	{
+		if (this.abstractSyntaxTree == null)
+		{
+			System.out.println(Color.getYellowMessage(String.format(
+				"Warning: the abstract syntax tree of comment \"%s\" has not been generated yet!",
+				this.getContent()
+			)));
+		}
+
+		return this.abstractSyntaxTree;
 	}
 
 	//Private methods

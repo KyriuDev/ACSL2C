@@ -1,4 +1,4 @@
-package constants;
+package constants.c;
 
 /**
  * Name:        CPPProgram.java

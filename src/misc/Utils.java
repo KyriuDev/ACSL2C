@@ -1,7 +1,14 @@
 package misc;
 
+import constants.Xml;
+import org.apache.commons.io.FileUtils;
 import org.eclipse.cdt.core.dom.ast.IASTFileLocation;
 import org.eclipse.cdt.core.dom.ast.IASTNode;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.util.List;
 
 /**
  * Name:        Utils.java
@@ -11,9 +18,10 @@ import org.eclipse.cdt.core.dom.ast.IASTNode;
  * Creation:    25/02/26
  */
 
-
 public class Utils
 {
+	private static final String TEMP_DIR_PROPERTY = "java.io.tmpdir";
+
 	private Utils()
 	{
 
@@ -95,5 +103,66 @@ public class Utils
 		}
 
 		return true;
+	}
+
+	/**
+	 * This method corresponds to the String.join(List<T>) Python method.
+	 *
+	 * @param elements the elements to concatenate.
+	 * @return a string corresponding to the concatenation of the input elements
+	 */
+	public static String join(final List<?> elements,
+							  final String separatorToUse)
+	{
+		final StringBuilder builder = new StringBuilder();
+		String separator = "";
+
+		for (Object element : elements)
+		{
+			builder.append(separator)
+					.append(element.toString());
+
+			separator = separatorToUse;
+		}
+
+		return builder.toString();
+	}
+
+	/**
+	 * This method asks the JVM to find or create a usable temporary directory.
+	 *
+	 * @return the absolute path of the temporary directory if it could be created/found, null otherwise.
+	 */
+	public static String getTempDir()
+	{
+		//Get a temporary directory and clean it.
+		final String tmpDir;
+
+		try
+		{
+			tmpDir = Files.createTempDirectory("").toFile().getAbsolutePath();
+			final String tmpDirsLocation = System.getProperty(TEMP_DIR_PROPERTY);
+			assert tmpDir.startsWith(tmpDirsLocation);
+			final File tempDir = new File(tmpDir);
+			FileUtils.cleanDirectory(tempDir);
+		}
+		catch (final IOException e)
+		{
+			return null;
+		}
+
+		return tmpDir;
+	}
+
+	/**
+	 * This method is used to insert the opening tag characters '<' and '>' respectively at the beginning and at the
+	 * end of the string given as input.
+	 *
+	 * @param s the string to surround by tag characters.
+	 * @return the "tagged" version of the string.
+	 */
+	public static String tagify(final String s)
+	{
+		return Xml.OPENING_TAG + s + Xml.CLOSING_TAG;
 	}
 }

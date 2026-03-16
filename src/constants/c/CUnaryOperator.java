@@ -1,8 +1,6 @@
-package constants;
+package constants.c;
 
 import org.eclipse.cdt.core.dom.ast.IASTUnaryExpression;
-
-import java.util.*;
 
 /**
  * Name:        CUnaryOperator.java

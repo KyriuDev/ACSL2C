@@ -1,6 +1,10 @@
 package writing;
 
 import constants.*;
+import constants.c.CBinaryOperator;
+import constants.c.CDeclarationSpecifier;
+import constants.c.CType;
+import constants.c.CUnaryOperator;
 import dto.CComment;
 import exceptions.UnhandledElementException;
 import misc.CommandLineParser;

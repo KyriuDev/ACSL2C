@@ -1,8 +1,8 @@
 package parsing;
 
-import constants.ACSLKeyword;
-import constants.CCommentNature;
-import constants.CCommentType;
+import constants.acsl.ACSLKeyword;
+import constants.c.CCommentNature;
+import constants.c.CCommentType;
 import dto.CComment;
 import misc.Pair;
 import misc.Utils;
@@ -173,6 +173,22 @@ public class CommentsHandler
 				precedingAndSucceedingNodes.getClosestSucceedingNode() == null ? "null" : precedingAndSucceedingNodes.getClosestSucceedingNode().toString()
 			);
 		}
+	}
+
+	/**
+	 * This method is a convenience method used only for test purposes of other parts of this project.
+	 * It simply returns the first comment found by the iterator, or null if the C program does not contain any comment.
+	 *
+	 * @return the first comment found by the iterator.
+	 */
+	public CComment getRandomComment()
+	{
+		if (this.commentsSurroundings.isEmpty())
+		{
+			return null;
+		}
+
+		return this.commentsSurroundings.keySet().iterator().next();
 	}
 
 	//Private methods

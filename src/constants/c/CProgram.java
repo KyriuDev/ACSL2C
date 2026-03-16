@@ -1,4 +1,4 @@
-package constants;
+package constants.c;
 
 /**
  * Name:        CProgram.java
@@ -60,6 +60,17 @@ public class CProgram
 			"return 0;\n" +
 		"}"
 	;
+
+	public static final String PROGRAM_1_WITH_ACSL_COMMENT =
+		"//@ requires y>=0;\n" +
+		"//@ ensures \\result = \\old(x) + \\old(y);\n" +
+		"int main() {\n" +
+			"int x = 5;\n" +
+			"int y = 7;\n" +
+			"int sum = x + y;\n\n" +
+
+			"return 0;\n" +
+		"}";
 
 	public static final String PROGRAM_2_WITH_LINE_BREAKS =
 		"int sum(int x, int y){\n" +

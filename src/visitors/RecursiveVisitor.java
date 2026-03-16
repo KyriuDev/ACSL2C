@@ -1,6 +1,10 @@
 package visitors;
 
 import constants.*;
+import constants.c.CBinaryOperator;
+import constants.c.CDeclarationSpecifier;
+import constants.c.CType;
+import constants.c.CUnaryOperator;
 import exceptions.UnhandledElementException;
 import misc.Utils;
 import org.eclipse.cdt.core.dom.ast.*;
