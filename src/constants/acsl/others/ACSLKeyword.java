@@ -1,4 +1,4 @@
-package constants.acsl;
+package constants.acsl.others;
 
 /**
  * Name:        ACSLKeyword.java

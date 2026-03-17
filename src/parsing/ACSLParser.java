@@ -4,11 +4,12 @@ import ast.AbstractSyntaxNode;
 import ast.AbstractSyntaxTree;
 import ast.AstFactory;
 import constants.ReturnCode;
-import constants.acsl.ast.PredicateOrTermNode;
-import constants.acsl.ast.RequiresClauseNode;
+import constants.acsl.ast.*;
 import constants.acsl.others.AcslClauseKind;
+import constants.acsl.others.AcslType;
 import constants.acsl.xml.AcslXmlAttribute;
-import constants.acsl.xml.AcslXmlTag;
+import constants.c.CCommentNature;
+import constants.c.CCommentType;
 import dto.CComment;
 import exceptions.UnhandledElementException;
 import misc.CommandManager;
@@ -26,7 +27,9 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Scanner;
 
 /**
  * Name:        ACSLParser.java
@@ -57,6 +60,44 @@ public class ACSLParser
 		this.acslComments = comments;
 	}
 
+	/**
+	 * This constructor is used for testing and debugging purposes only.
+	 *
+	 * @param commentFile the file containing the comment to parse
+	 */
+	public ACSLParser(final File commentFile)
+	{
+		final Scanner scanner;
+		try
+		{
+			scanner = new Scanner(commentFile);
+		}
+		catch (FileNotFoundException e)
+		{
+			throw new RuntimeException(e);
+		}
+
+		final StringBuilder builder = new StringBuilder();
+
+		while (scanner.hasNextLine())
+		{
+			builder.append(scanner.nextLine());
+		}
+
+		scanner.close();
+
+		final CComment comment = new CComment(
+			CCommentType.MULTI_LINE,
+			CCommentNature.ACSL,
+			-1,
+			-1,
+			builder.toString()
+		);
+
+		this.acslComments = new ArrayList<>();
+		this.acslComments.add(comment);
+	}
+
 	//Public methods
 
 	/**
@@ -68,7 +109,7 @@ public class ACSLParser
 	 * - The resulting temporary file is an AST representation of the comment, which is parsed and stored in the
 	 *   comment being handled.
 	 */
-	public void parse()
+	public void parse() throws UnhandledElementException
 	{
 		for (final CComment comment : this.acslComments)
 		{
@@ -76,6 +117,11 @@ public class ACSLParser
 			this.callSyntax(tempDirPath);
 			final AbstractSyntaxTree commentTree = this.parseAcslComment(tempDirPath);
 			comment.setAbstractSyntaxTree(commentTree);
+			System.out.println("\nTree before collapse:");
+			System.out.println(commentTree);
+			System.out.println("\nTree after collapse:");
+			commentTree.collapseTree();
+			System.out.println(commentTree);
 		}
 	}
 
@@ -167,7 +213,7 @@ public class ACSLParser
 	 * @param tempDirPath the path of the temporary directory containing the XML tree representation of the comment.
 	 * @return the abstract syntax tree corresponding to the comment.
 	 */
-	private AbstractSyntaxTree parseAcslComment(final String tempDirPath)
+	private AbstractSyntaxTree parseAcslComment(final String tempDirPath) throws UnhandledElementException
 	{
 		//Set up the XML parser
 		final File abstractSyntaxTreePath = new File(tempDirPath + File.separator + ABSTRACT_SYNTAX_TREE_FILE_NAME);
@@ -202,7 +248,7 @@ public class ACSLParser
 													 final Document document) throws UnhandledElementException
 	{
 		final AbstractSyntaxTree abstractSyntaxTree = new AbstractSyntaxTree(AstFactory.createRootNode());
-		final NodeList rootList = document.getElementsByTagName(AcslXmlTag.ACSL_FILE);
+		final NodeList rootList = document.getElementsByTagName(AcslType.ROOT.getXmlTag());
 
 		if (rootList == null
 			|| rootList.getLength() == 0)
@@ -218,13 +264,13 @@ public class ACSLParser
 			this.assertNodeTypeElement(child);
 			final Element childElement = (Element) child;
 
-			if (childElement.getTagName().equals(AcslXmlTag.FUNCTION_CONTRACT))
+			if (childElement.getTagName().equals(AcslType.FUNCTION_CONTRACT.getXmlTag()))
 			{
 				this.parseFunctionContract(childElement, abstractSyntaxTree.getRoot());
 			}
 			else
 			{
-				throwUnexpectedElementError(childElement.getTagName(), Utils.tagify(AcslXmlTag.ACSL_FILE));
+				throwUnexpectedElementError(childElement.getTagName(), AcslType.ROOT.getXmlTag());
 			}
 		}
 
@@ -245,13 +291,173 @@ public class ACSLParser
 			this.assertNodeTypeElement(child);
 			final Element childElement = (Element) child;
 
-			if (childElement.getTagName().equals(AcslXmlTag.REQUIRES_CLAUSE_LIST))
+			if (childElement.getTagName().equals(AcslType.NAMED_BEHAVIOR_LIST.getXmlTag()))
+			{
+				this.parseNamedBehaviorList(childElement, functionContractNode);
+			}
+			else if (childElement.getTagName().equals(AcslType.REQUIRES_CLAUSE_LIST.getXmlTag()))
 			{
 				this.parseRequiresClauseList(childElement, functionContractNode);
 			}
+			else if (childElement.getTagName().equals(AcslType.SIMPLE_CLAUSE_LIST.getXmlTag()))
+			{
+				this.parseSimpleClauseList(childElement, functionContractNode);
+			}
 			else
 			{
-				throwUnexpectedElementError(childElement.getTagName(), Utils.tagify(AcslXmlTag.FUNCTION_CONTRACT));
+				throwUnexpectedElementError(childElement.getTagName(), AcslType.FUNCTION_CONTRACT.getXmlTag());
+			}
+		}
+	}
+
+	private void parseNamedBehaviorList(final Element namedBehaviorList,
+										final AbstractSyntaxNode currentNode) throws UnhandledElementException
+	{
+		final AbstractSyntaxNode namedBehaviorListNode = AstFactory.createNamedBehaviorListNode();
+		currentNode.addChildAndForceParent(namedBehaviorListNode);
+
+		for (int i = 0; i < namedBehaviorList.getChildNodes().getLength(); i++)
+		{
+			final Node child = namedBehaviorList.getChildNodes().item(i);
+			this.assertNodeTypeElement(child);
+			final Element childElement = (Element) child;
+
+			if (childElement.getTagName().equals(AcslType.BEHAVIOR.getXmlTag()))
+			{
+				this.parseBehavior(childElement, namedBehaviorListNode);
+			}
+			else
+			{
+				throwUnexpectedElementError(childElement.getTagName(), AcslType.NAMED_BEHAVIOR_LIST.getXmlTag());
+			}
+		}
+	}
+
+	private void parseBehavior(final Element behavior,
+							   final AbstractSyntaxNode currentNode) throws UnhandledElementException
+	{
+		final String id = behavior.getAttribute(AcslXmlAttribute.IDENTIFIER);
+		final BehaviorNode behaviorNode = AstFactory.createBehaviorNode(id);
+		currentNode.addChildAndForceParent(behaviorNode);
+
+		for (int i = 0; i < behavior.getChildNodes().getLength(); i++)
+		{
+			final Node child = behavior.getChildNodes().item(i);
+			this.assertNodeTypeElement(child);
+			final Element childElement = (Element) child;
+
+			if (childElement.getTagName().equals(AcslType.ASSUMES_CLAUSE_LIST.getXmlTag()))
+			{
+				this.parseAssumesClauseList(childElement, behaviorNode);
+			}
+			else if (childElement.getTagName().equals(AcslType.REQUIRES_CLAUSE_LIST.getXmlTag()))
+			{
+				this.parseRequiresClauseList(childElement, behaviorNode);
+			}
+			else if (childElement.getTagName().equals(AcslType.SIMPLE_CLAUSE_LIST.getXmlTag()))
+			{
+				this.parseSimpleClauseList(childElement, behaviorNode);
+			}
+			else
+			{
+				throwUnexpectedElementError(childElement.getTagName(), AcslType.NAMED_BEHAVIOR_LIST.getXmlTag());
+			}
+		}
+	}
+
+	private void parseAssumesClauseList(final Element assumesClauseList,
+									    final AbstractSyntaxNode currentNode) throws UnhandledElementException
+	{
+		final AbstractSyntaxNode assumesClauseListNode = AstFactory.createAssumesClauseListNode();
+		currentNode.addChildAndForceParent(assumesClauseListNode);
+
+		for (int i = 0; i < assumesClauseList.getChildNodes().getLength(); i++)
+		{
+			final Node child = assumesClauseList.getChildNodes().item(i);
+			this.assertNodeTypeElement(child);
+			final Element childElement = (Element) child;
+
+			if (childElement.getTagName().equals(AcslType.PREDICATE_OR_TERM.getXmlTag()))
+			{
+				this.parsePredicateOrTerm(childElement, assumesClauseListNode);
+			}
+			else
+			{
+				throwUnexpectedElementError(childElement.getTagName(), AcslType.ASSUMES_CLAUSE_LIST.getXmlTag());
+			}
+		}
+	}
+
+	private void parseSimpleClauseList(final Element simpleClauseList,
+							           final AbstractSyntaxNode currentNode) throws UnhandledElementException
+	{
+		final AbstractSyntaxNode simpleClauseListNode = AstFactory.createSimpleClauseListNode();
+		currentNode.addChildAndForceParent(simpleClauseListNode);
+
+		for (int i = 0; i < simpleClauseList.getChildNodes().getLength(); i++)
+		{
+			final Node child = simpleClauseList.getChildNodes().item(i);
+			this.assertNodeTypeElement(child);
+			final Element childElement = (Element) child;
+
+			if (childElement.getTagName().equals(AcslType.ASSIGN_CLAUSE.getXmlTag()))
+			{
+				this.parseAssignClause(childElement, simpleClauseListNode);
+			}
+			else if (childElement.getTagName().equals(AcslType.ENSURES_CLAUSE.getXmlTag()))
+			{
+				this.parseEnsuresClause(childElement, simpleClauseListNode);
+			}
+			else
+			{
+				throwUnexpectedElementError(childElement.getTagName(), AcslType.SIMPLE_CLAUSE_LIST.getXmlTag());
+			}
+		}
+	}
+
+	private void parseAssignClause(final Element assignClause,
+								   final AbstractSyntaxNode currentNode) throws UnhandledElementException
+	{
+		final AssignClauseNode assignClauseNode = AstFactory.createAssignClauseNode();
+		currentNode.addChildAndForceParent(assignClauseNode);
+
+		for (int i = 0; i < assignClause.getChildNodes().getLength(); i++)
+		{
+			final Node child = assignClause.getChildNodes().item(i);
+			this.assertNodeTypeElement(child);
+			final Element childElement = (Element) child;
+
+			if (childElement.getTagName().equals(AcslType.LOCATIONS.getXmlTag()))
+			{
+				this.parseLocations(childElement, assignClauseNode);
+			}
+			else
+			{
+				throwUnexpectedElementError(childElement.getTagName(), AcslType.ASSIGN_CLAUSE.getXmlTag());
+			}
+		}
+	}
+
+	private void parseEnsuresClause(final Element ensuresClause,
+								    final AbstractSyntaxNode currentNode) throws UnhandledElementException
+	{
+		final String clauseKind = ensuresClause.getAttribute(AcslXmlAttribute.KIND);
+		final EnsuresClauseNode ensuresClauseNode = AstFactory.createEnsuresClauseNode(AcslClauseKind.getKindFromName(clauseKind));
+		currentNode.addChildAndForceParent(ensuresClauseNode);
+
+		for (int i = 0; i < ensuresClause.getChildNodes().getLength(); i++)
+		{
+			final Node child = ensuresClause.getChildNodes().item(i);
+			this.assertNodeTypeElement(child);
+			final Element childElement = (Element) child;
+
+			if (childElement.getTagName().equals(AcslType.PREDICATE_OR_TERM.getXmlTag()))
+			{
+				this.parsePredicateOrTerm(childElement, ensuresClauseNode);
+			}
+			else
+			{
+				throwUnexpectedElementError(childElement.getTagName(), AcslType.ENSURES_CLAUSE.getXmlTag());
 			}
 		}
 	}
@@ -268,13 +474,13 @@ public class ACSLParser
 			this.assertNodeTypeElement(child);
 			final Element childElement = (Element) child;
 
-			if (childElement.getTagName().equals(AcslXmlTag.REQUIRES_CLAUSE))
+			if (childElement.getTagName().equals(AcslType.REQUIRES_CLAUSE.getXmlTag()))
 			{
 				this.parseRequiresClause(childElement, requiresClauseListNode);
 			}
 			else
 			{
-				throwUnexpectedElementError(childElement.getTagName(), Utils.tagify(AcslXmlTag.REQUIRES_CLAUSE_LIST));
+				throwUnexpectedElementError(childElement.getTagName(), AcslType.REQUIRES_CLAUSE_LIST.getXmlTag());
 			}
 		}
 	}
@@ -292,14 +498,177 @@ public class ACSLParser
 			this.assertNodeTypeElement(child);
 			final Element childElement = (Element) child;
 
-			if (childElement.getTagName().equals(AcslXmlTag.PREDICATE_OR_TERM))
+			if (childElement.getTagName().equals(AcslType.PREDICATE_OR_TERM.getXmlTag()))
 			{
 				this.parsePredicateOrTerm(childElement, requiresClauseNode);
 			}
 			else
 			{
-				throwUnexpectedElementError(childElement.getTagName(), Utils.tagify(AcslXmlTag.REQUIRES_CLAUSE));
+				throwUnexpectedElementError(childElement.getTagName(), AcslType.REQUIRES_CLAUSE.getXmlTag());
 			}
+		}
+	}
+
+	private void parseLocations(final Element locations,
+								final AbstractSyntaxNode currentNode) throws UnhandledElementException
+	{
+		final AbstractSyntaxNode locationsNode = AstFactory.createLocationsNode();
+		currentNode.addChildAndForceParent(locationsNode);
+
+		for (int i = 0; i < locations.getChildNodes().getLength(); i++)
+		{
+			final Node child = locations.getChildNodes().item(i);
+			this.assertNodeTypeElement(child);
+			final Element childElement = (Element) child;
+
+			if (childElement.getTagName().equals(AcslType.LOCATION.getXmlTag()))
+			{
+				this.parseLocation(childElement, locationsNode);
+			}
+			else
+			{
+				throwUnexpectedElementError(childElement.getTagName(), AcslType.LOCATIONS.getXmlTag());
+			}
+		}
+	}
+
+	private void parseLocation(final Element locations,
+							   final AbstractSyntaxNode currentNode) throws UnhandledElementException
+	{
+		final AbstractSyntaxNode locationNode = AstFactory.createLocationNode();
+		currentNode.addChildAndForceParent(locationNode);
+
+		for (int i = 0; i < locations.getChildNodes().getLength(); i++)
+		{
+			final Node child = locations.getChildNodes().item(i);
+			this.assertNodeTypeElement(child);
+			final Element childElement = (Element) child;
+
+			if (childElement.getTagName().equals(AcslType.MEMORY_ALLOCATION_SET.getXmlTag()))
+			{
+				this.parseMemoryLocationSet(childElement, locationNode);
+			}
+			else
+			{
+				throwUnexpectedElementError(childElement.getTagName(), AcslType.LOCATION.getXmlTag());
+			}
+		}
+	}
+
+	private void parseBinders(final Element binders,
+							  final AbstractSyntaxNode currentNode) throws UnhandledElementException
+	{
+		final AbstractSyntaxNode bindersNode = AstFactory.createBindersNode();
+		currentNode.addChildAndForceParent(bindersNode);
+
+		for (int i = 0; i < binders.getChildNodes().getLength(); i++)
+		{
+			final Node child = binders.getChildNodes().item(i);
+			this.assertNodeTypeElement(child);
+			final Element childElement = (Element) child;
+
+			if (childElement.getTagName().equals(AcslType.BINDER.getXmlTag()))
+			{
+				this.parseBinder(childElement, bindersNode);
+			}
+			else
+			{
+				throwUnexpectedElementError(childElement.getTagName(), AcslType.BINDERS.getXmlTag());
+			}
+		}
+	}
+
+	private void parseBinder(final Element binder,
+							 final AbstractSyntaxNode currentNode) throws UnhandledElementException
+	{
+		final AbstractSyntaxNode binderNode = AstFactory.createBinderNode();
+		currentNode.addChildAndForceParent(binderNode);
+
+		for (int i = 0; i < binder.getChildNodes().getLength(); i++)
+		{
+			final Node child = binder.getChildNodes().item(i);
+			this.assertNodeTypeElement(child);
+			final Element childElement = (Element) child;
+
+			if (childElement.getTagName().equals(AcslType.TYPES.getXmlTag()))
+			{
+				this.parseTypes(childElement, binderNode);
+			}
+			else if (childElement.getTagName().equals(AcslType.VARIABLE_IDENTIFIER.getXmlTag()))
+			{
+				this.parseVariableIdentifier(childElement, binderNode);
+			}
+			else
+			{
+				throwUnexpectedElementError(childElement.getTagName(), AcslType.BINDER.getXmlTag());
+			}
+		}
+	}
+
+	private void parseTypes(final Element types,
+							final AbstractSyntaxNode currentNode) throws UnhandledElementException
+	{
+		final AbstractSyntaxNode typesNode = AstFactory.createTypesNode();
+		currentNode.addChildAndForceParent(typesNode);
+
+		for (int i = 0; i < types.getChildNodes().getLength(); i++)
+		{
+			final Node child = types.getChildNodes().item(i);
+			this.assertNodeTypeElement(child);
+			final Element childElement = (Element) child;
+
+			if (childElement.getTagName().equals(AcslType.TYPE_SPECIFIER.getXmlTag()))
+			{
+				this.parseTypeSpecifier(childElement, typesNode);
+			}
+			else
+			{
+				throwUnexpectedElementError(childElement.getTagName(), AcslType.TYPES.getXmlTag());
+			}
+		}
+	}
+
+	private void parseTypeSpecifier(final Element typeSpecifier,
+									final AbstractSyntaxNode currentNode) throws UnhandledElementException
+	{
+		final AbstractSyntaxNode typesNode = AstFactory.createTypesNode();
+		currentNode.addChildAndForceParent(typesNode);
+
+		for (int i = 0; i < typeSpecifier.getChildNodes().getLength(); i++)
+		{
+			final Node child = typeSpecifier.getChildNodes().item(i);
+			this.assertNodeTypeElement(child);
+			final Element childElement = (Element) child;
+
+			if (childElement.getTagName().equals(AcslType.TYPE_SPECIFIER.getXmlTag()))
+			{
+				this.parseTypeSpecifier(childElement, typesNode);
+			}
+			else
+			{
+				throwUnexpectedElementError(childElement.getTagName(), AcslType.TYPES.getXmlTag());
+			}
+		}
+	}
+
+	private void parseMemoryLocationSet(final Element location,
+										final AbstractSyntaxNode currentNode) throws UnhandledElementException
+	{
+		final String content = location.getTextContent();
+		final AbstractSyntaxNode memoryAllocationSet = AstFactory.createMemoryAllocationSetNode(content);
+		currentNode.addChildAndForceParent(memoryAllocationSet);
+
+		for (int i = 0; i < location.getChildNodes().getLength(); i++)
+		{
+			final Node child = location.getChildNodes().item(i);
+
+			if (child.getNodeType() == Node.TEXT_NODE)
+			{
+				continue;
+			}
+
+			this.assertNodeTypeElement(child);
+			final Element childElement = (Element) child;
 		}
 	}
 
@@ -307,34 +676,152 @@ public class ACSLParser
 									  final AbstractSyntaxNode currentNode) throws UnhandledElementException
 	{
 		final String predicateOrTermKind = predicateOrTerm.getAttribute(AcslXmlAttribute.KIND);
-		final PredicateOrTermNode predicateOrTermNode = AstFactory.createPredicateOrTermNode(predicateOrTermKind);
+		final String predicateOrTermContent = predicateOrTerm.getTextContent();
+		final PredicateOrTermNode predicateOrTermNode = AstFactory.createPredicateOrTermNode(
+			predicateOrTermKind,
+			predicateOrTermContent
+		);
 		currentNode.addChildAndForceParent(predicateOrTermNode);
 
 		for (int i = 0; i < predicateOrTerm.getChildNodes().getLength(); i++)
 		{
 			final Node child = predicateOrTerm.getChildNodes().item(i);
+
+			if (child.getNodeType() == Node.TEXT_NODE)
+			{
+				continue;
+			}
+
 			this.assertNodeTypeElement(child);
 			final Element childElement = (Element) child;
 
-			if (childElement.getTagName().equals(AcslXmlTag.PREDICATE_OR_TERM))
+			if (childElement.getTagName().equals(AcslType.BINDERS.getXmlTag()))
 			{
-				this.parsePredicateOrTerm(childElement, predicateOrTermNode);
+				this.parseBinders(childElement, predicateOrTermNode);
 			}
-			else if (childElement.getTagName().equals(AcslXmlTag.OPERATOR))
+			else if (childElement.getTagName().equals(AcslType.INDEX.getXmlTag()))
+			{
+				this.parseIndex(childElement, predicateOrTermNode);
+			}
+			else if (childElement.getTagName().equals(AcslType.LOWER_BOUND.getXmlTag()))
+			{
+				this.parseLowerBound(childElement, predicateOrTermNode);
+			}
+			else if (childElement.getTagName().equals(AcslType.NAME.getXmlTag()))
+			{
+				this.parseName(childElement, predicateOrTermNode);
+			}
+			else if (childElement.getTagName().equals(AcslType.OPERATOR.getXmlTag()))
 			{
 				this.parseOperator(childElement, predicateOrTermNode);
 			}
+			else if (childElement.getTagName().equals(AcslType.PREDICATE_OR_TERM.getXmlTag()))
+			{
+				this.parsePredicateOrTerm(childElement, predicateOrTermNode);
+			}
+			else if (childElement.getTagName().equals(AcslType.UPPER_BOUND.getXmlTag()))
+			{
+				this.parseUpperBound(childElement, predicateOrTermNode);
+			}
 			else
 			{
-				throwUnexpectedElementError(childElement.getTagName(), Utils.tagify(AcslXmlTag.PREDICATE_OR_TERM));
+				throwUnexpectedElementError(childElement.getTagName(), AcslType.PREDICATE_OR_TERM.getXmlTag());
+			}
+		}
+	}
+
+	private void parseName(final Element name,
+						   final AbstractSyntaxNode currentNode) throws UnhandledElementException
+	{
+		final NameNode nameNode = AstFactory.createNameNode(name.getTextContent());
+		currentNode.addChildAndForceParent(nameNode);
+
+		if (!nameNode.getChildren().isEmpty())
+		{
+			throwNewNoChildrenExpectedError(AcslType.NAME.getXmlTag());
+		}
+	}
+
+	private void parseIndex(final Element index,
+							final AbstractSyntaxNode currentNode) throws UnhandledElementException
+	{
+		final AbstractSyntaxNode indexNode = AstFactory.createIndexNode();
+		currentNode.addChildAndForceParent(indexNode);
+
+		for (int i = 0; i < index.getChildNodes().getLength(); i++)
+		{
+			final Node child = index.getChildNodes().item(i);
+			this.assertNodeTypeElement(child);
+			final Element childElement = (Element) child;
+
+			if (childElement.getTagName().equals(AcslType.PREDICATE_OR_TERM.getXmlTag()))
+			{
+				this.parsePredicateOrTerm(childElement, indexNode);
+			}
+			else
+			{
+				throwUnexpectedElementError(childElement.getTagName(), AcslType.INDEX.getXmlTag());
+			}
+		}
+	}
+
+	private void parseLowerBound(final Element lowerBound,
+								 final AbstractSyntaxNode currentNode) throws UnhandledElementException
+	{
+		final AbstractSyntaxNode lowerBoundNode = AstFactory.createBoundaryNode(AcslType.LOWER_BOUND);
+		currentNode.addChildAndForceParent(lowerBoundNode);
+
+		for (int i = 0; i < lowerBound.getChildNodes().getLength(); i++)
+		{
+			final Node child = lowerBound.getChildNodes().item(i);
+			this.assertNodeTypeElement(child);
+			final Element childElement = (Element) child;
+
+			if (childElement.getTagName().equals(AcslType.PREDICATE_OR_TERM.getXmlTag()))
+			{
+				this.parsePredicateOrTerm(childElement, lowerBoundNode);
+			}
+			else
+			{
+				throwUnexpectedElementError(childElement.getTagName(), AcslType.LOWER_BOUND.getXmlTag());
+			}
+		}
+	}
+
+	private void parseUpperBound(final Element upperBound,
+								 final AbstractSyntaxNode currentNode) throws UnhandledElementException
+	{
+		final AbstractSyntaxNode lowerBoundNode = AstFactory.createBoundaryNode(AcslType.UPPER_BOUND);
+		currentNode.addChildAndForceParent(lowerBoundNode);
+
+		for (int i = 0; i < upperBound.getChildNodes().getLength(); i++)
+		{
+			final Node child = upperBound.getChildNodes().item(i);
+			this.assertNodeTypeElement(child);
+			final Element childElement = (Element) child;
+
+			if (childElement.getTagName().equals(AcslType.PREDICATE_OR_TERM.getXmlTag()))
+			{
+				this.parsePredicateOrTerm(childElement, lowerBoundNode);
+			}
+			else
+			{
+				throwUnexpectedElementError(childElement.getTagName(), AcslType.UPPER_BOUND.getXmlTag());
 			}
 		}
 	}
 
 	private void parseOperator(final Element operator,
-							   final AbstractSyntaxNode currentNode)
+							   final AbstractSyntaxNode currentNode) throws UnhandledElementException
 	{
 		final String operatorName = operator.getTextContent();
+		final OperatorNode operatorNode = AstFactory.createOperatorNode(operatorName);
+		currentNode.addChildAndForceParent(operatorNode);
+
+		if (!operatorNode.getChildren().isEmpty())
+		{
+			throwNewNoChildrenExpectedError(AcslType.OPERATOR.getXmlTag());
+		}
 	}
 
 	//Utility methods
@@ -344,7 +831,7 @@ public class ACSLParser
 		if (node.getNodeType() != Node.ELEMENT_NODE)
 		{
 			throw new RuntimeException(String.format(
-				"Expected node of type %d, got %d",
+				"Expected node of type %d, got type %d instead.",
 				node.getNodeType(),
 				Node.ELEMENT_NODE
 			));
@@ -355,9 +842,17 @@ public class ACSLParser
 											 final String parentTag) throws UnhandledElementException
 	{
 		throw new UnhandledElementException(String.format(
-			"The tag \"%s\" was not expected as child of an \"%s\" tag.",
-			currentTag,
+			"The tag \"%s\" was not expected as child of a \"%s\" tag.",
+			Utils.tagify(currentTag),
 			Utils.tagify(parentTag)
+		));
+	}
+
+	private void throwNewNoChildrenExpectedError(final String nodeTag) throws UnhandledElementException
+	{
+		throw new UnhandledElementException(String.format(
+			"The tag \"%s\" is not supposed to have children.",
+			Utils.tagify(nodeTag)
 		));
 	}
 }

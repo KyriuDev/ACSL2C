@@ -3,52 +3,42 @@ package constants.acsl.ast;
 import ast.AbstractSyntaxNode;
 import constants.acsl.others.AcslPredicateOrTermKind;
 import constants.acsl.others.AcslType;
-import constants.c.CBinaryOperator;
+import constants.c.CUnaryOperator;
 import misc.Utils;
 
-import java.util.Iterator;
-
-/**
- * Name:        BinaryOperationNode.java
- * Content:	    This class defines a BinaryOperationNode with an operator and two PredicateOrTerm children nodes.
- * Author:      Quentin Nivon
- * Email:       quentin.nivon@uol.de
- * Creation:    16/03/26
- */
-
-public class BinaryOperationNode extends PredicateOrTermNode
+public class UnaryOperationNode extends PredicateOrTermNode
 {
-	private CBinaryOperator operator;
+	private CUnaryOperator operator;
 
 	//Constructors
 
-	public BinaryOperationNode()
+	public UnaryOperationNode()
 	{
 		this(null, null);
 	}
 
-	public BinaryOperationNode(final String content)
+	public UnaryOperationNode(final String content)
 	{
 		this(null, content);
 	}
 
-	public BinaryOperationNode(final CBinaryOperator operator)
+	public UnaryOperationNode(final CUnaryOperator operator)
 	{
 		this(operator, null);
 	}
 
-	public BinaryOperationNode(final CBinaryOperator operator,
-							   final String content)
+	public UnaryOperationNode(final CUnaryOperator operator,
+							  final String content)
 	{
-		super(AcslPredicateOrTermKind.BINARY_OPERATOR, content);
+		super(AcslPredicateOrTermKind.UNARY_OPERATOR, content);
 		this.operator = operator;
 	}
 
 	//Overrides
 
 	/**
-	 * A binary operation node is considered to be well-formed as long it as a non-null "operator" and exactly two
-	 * children being predicates or terms.
+	 * A unary operation node is considered to be well-formed as long it as a non-null "operator" and exactly one child
+	 * being a predicate or a term.
 	 *
 	 * @return null if the current node is well-formed, an error message otherwise.
 	 */
@@ -56,19 +46,17 @@ public class BinaryOperationNode extends PredicateOrTermNode
 	public String checkWellFormedness()
 	{
 		if (this.operator == null
-			|| this.getChildren().size() != 2
-			|| this.getChildren().get(0).getType() != AcslType.PREDICATE_OR_TERM
-			|| this.getChildren().get(1).getType() != AcslType.PREDICATE_OR_TERM)
+			|| this.getChildren().size() != 1
+			|| this.getChildren().get(0).getType() != AcslType.PREDICATE_OR_TERM)
 		{
 			return String.format(
-				"Binary operation node is malformed:" +
+				"Unary operation node is malformed:" +
 				"\n\t- Expected non-null operator, got \"%s\";" +
-				"\n\t- Expected 2 children, got %d;" +
-				"\n\t- Expected both children to be predicates or terms, got \"%s\" and \"%s\".",
+				"\n\t- Expected 1 child, got %d;" +
+				"\n\t- Expected the child to be a predicate or a term, got a \"%s\".",
 				this.operator == null ? null : this.operator.getOperator(),
 				this.getChildren().size(),
-				!this.getChildren().isEmpty() ? this.getChildren().get(0).getType().getReadableName() : null,
-				this.getChildren().size() > 1 ? this.getChildren().get(1).getType().getReadableName() : null
+				!this.getChildren().isEmpty() ? this.getChildren().get(0).getType().getReadableName() : null
 			);
 		}
 
@@ -76,7 +64,7 @@ public class BinaryOperationNode extends PredicateOrTermNode
 	}
 
 	/**
-	 * A binary operation node can be collapsed in the sense that its OperatorNode child information can be stored
+	 * A unary operation node can be collapsed in the sense that its OperatorNode child information can be stored
 	 * directly in the node.
 	 * This is what this method performs, thus ending with the removal of the no longer useful child.
 	 */
@@ -89,14 +77,14 @@ public class BinaryOperationNode extends PredicateOrTermNode
 		{
 			if (child instanceof OperatorNode)
 			{
-				final CBinaryOperator operator = CBinaryOperator.convertXmlOperatorNameToThis(
+				final CUnaryOperator operator = CUnaryOperator.convertXmlOperatorNameToThis(
 					((OperatorNode) child).getName()
 				);
 				this.setOperator(operator);
 				childToRemove = child;
 				child.removeParent(this);
 				/*
-					This break is useful to handle malformed BinaryOperationNodes when method "checkWellFormedness()"
+					This break is useful to handle malformed UnaryOperationNodes when method "checkWellFormedness()"
 					will be called.
 					Otherwise, it may silently collapse multiple OperatorNodes children, which is a structural error.
 				 */
@@ -116,7 +104,7 @@ public class BinaryOperationNode extends PredicateOrTermNode
 		builder.append("\n")
 				.append(Utils.repeatTabs(depth))
 				.append(String.format(
-					"- Binary operation \"%s\" has ",
+					"- Unary operation \"%s\" has ",
 					this.operator == null ? null : this.operator.getOperator()
 				));
 
@@ -142,12 +130,12 @@ public class BinaryOperationNode extends PredicateOrTermNode
 
 	//Public methods
 
-	public void setOperator(final CBinaryOperator operator)
+	public void setOperator(final CUnaryOperator operator)
 	{
 		this.operator = operator;
 	}
 
-	public CBinaryOperator getOperator()
+	public CUnaryOperator getOperator()
 	{
 		return this.operator;
 	}

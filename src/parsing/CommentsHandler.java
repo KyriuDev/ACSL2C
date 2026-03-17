@@ -1,6 +1,6 @@
 package parsing;
 
-import constants.acsl.ACSLKeyword;
+import constants.acsl.others.ACSLKeyword;
 import constants.c.CCommentNature;
 import constants.c.CCommentType;
 import dto.CComment;

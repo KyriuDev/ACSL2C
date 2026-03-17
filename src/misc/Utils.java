@@ -165,4 +165,22 @@ public class Utils
 	{
 		return Xml.OPENING_TAG + s + Xml.CLOSING_TAG;
 	}
+
+	/**
+	 * This method creates a string composed of nbTabs tabulations.
+	 *
+	 * @param nbTabs the number of tabulations to insert.
+	 * @return a string composed of nbTabs tabulations.
+	 */
+	public static String repeatTabs(final int nbTabs)
+	{
+		final StringBuilder builder = new StringBuilder();
+
+		for (int i = 0; i < nbTabs; i++)
+		{
+			builder.append("\t");
+		}
+
+		return builder.toString();
+	}
 }

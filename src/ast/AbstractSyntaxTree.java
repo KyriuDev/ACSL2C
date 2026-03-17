@@ -29,6 +29,17 @@ public class AbstractSyntaxTree
 		this.root = root;
 	}
 
+	//Overrides
+
+	@Override
+	public String toString()
+	{
+		final StringBuilder builder = new StringBuilder();
+		this.root.stringify(builder, 0);
+
+		return builder.toString();
+	}
+
 	//Public methods
 
 	public void setRoot(final AbstractSyntaxNode root)
@@ -51,7 +62,7 @@ public class AbstractSyntaxTree
 	 */
 	public void collapseTree()
 	{
-		//TODO
+		this.root.collapse();
 
 		final List<String> incoherences = this.checkWellFormedness();
 

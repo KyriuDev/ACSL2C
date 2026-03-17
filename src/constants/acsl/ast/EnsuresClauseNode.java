@@ -5,28 +5,20 @@ import constants.acsl.others.AcslClauseKind;
 import constants.acsl.others.AcslType;
 import misc.Utils;
 
-/**
- * Name:        RequiresClauseNode.java
- * Content:	    This class defines a RequiresClauseNode with a kind that classical nodes do not have.
- * Author:      Quentin Nivon
- * Email:       quentin.nivon@uol.de
- * Creation:    16/03/26
- */
-
-public class RequiresClauseNode extends AbstractSyntaxNode
+public class EnsuresClauseNode extends AbstractSyntaxNode
 {
 	private AcslClauseKind clauseKind;
 
 	//Constructors
 
-	public RequiresClauseNode()
+	public EnsuresClauseNode()
 	{
 		this(null);
 	}
 
-	public RequiresClauseNode(final AcslClauseKind clauseKind)
+	public EnsuresClauseNode(final AcslClauseKind clauseKind)
 	{
-		super(AcslType.REQUIRES_CLAUSE);
+		super(AcslType.ENSURES_CLAUSE);
 		this.clauseKind = clauseKind;
 	}
 
@@ -39,8 +31,8 @@ public class RequiresClauseNode extends AbstractSyntaxNode
 		builder.append("\n")
 				.append(Utils.repeatTabs(depth))
 				.append(String.format(
-					"- Requires clause%s has ",
-					this.clauseKind == AcslClauseKind.NONE ? "" : this.clauseKind.getName()
+					"- Ensures clause%s has ",
+					this.clauseKind == AcslClauseKind.NONE ? "" : "\"" + this.clauseKind.getName() + "\""
 				));
 
 		if (this.getChildren().isEmpty())
@@ -68,7 +60,7 @@ public class RequiresClauseNode extends AbstractSyntaxNode
 	{
 		if (this.clauseKind == null)
 		{
-			return "Requires clause node is malformed: it should have a non-null clause kind.";
+			return "Ensures clause node is malformed: it should have a non-null clause kind.";
 		}
 
 		return null;
@@ -85,6 +77,4 @@ public class RequiresClauseNode extends AbstractSyntaxNode
 	{
 		return this.clauseKind;
 	}
-
-	//Private methods
 }

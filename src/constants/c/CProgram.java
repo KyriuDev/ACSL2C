@@ -70,7 +70,8 @@ public class CProgram
 			"int sum = x + y;\n\n" +
 
 			"return 0;\n" +
-		"}";
+		"}"
+	;
 
 	public static final String PROGRAM_2_WITH_LINE_BREAKS =
 		"int sum(int x, int y){\n" +

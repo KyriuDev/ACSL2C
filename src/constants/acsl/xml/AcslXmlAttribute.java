@@ -16,5 +16,6 @@ public class AcslXmlAttribute
 
 	}
 
+	public static final String IDENTIFIER = "id";
 	public static final String KIND = "kind";
 }

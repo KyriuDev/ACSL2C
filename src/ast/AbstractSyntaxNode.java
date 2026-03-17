@@ -1,6 +1,7 @@
 package ast;
 
 import constants.acsl.others.AcslType;
+import misc.Utils;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -31,6 +32,33 @@ public class AbstractSyntaxNode
 	}
 
 	//Public methods
+
+	public void stringify(final StringBuilder builder,
+						  final int depth)
+	{
+		builder.append("\n")
+				.append(Utils.repeatTabs(depth))
+				.append(String.format("- %s has ", this.type.getReadableName()));
+
+		if (this.children.isEmpty())
+		{
+			builder.append("no child.");
+		}
+		else if (this.children.size() == 1)
+		{
+			builder.append("1 child:");
+			this.children.iterator().next().stringify(builder, depth + 1);
+		}
+		else
+		{
+			builder.append(String.format("%d children:", this.children.size()));
+
+			for (final AbstractSyntaxNode child : this.children)
+			{
+				child.stringify(builder, depth + 1);
+			}
+		}
+	}
 
 	public AcslType getType()
 	{
@@ -149,6 +177,21 @@ public class AbstractSyntaxNode
 	public String checkWellFormedness()
 	{
 		return null;
+	}
+
+	/**
+	 * This method is used to collapse a node whenever it can be collapsed.
+	 * Basic nodes cannot be collapsed, in which case this function has no effect.
+	 * Some nodes, such as BinaryOperationNodes, can be collapsed as the information of their OperatorNode child can
+	 * be stored in the node itself, instead of as a (useless) child node.
+	 * Such collapsable nodes should thus override this method to perform the proper collapse.
+	 */
+	public void collapse()
+	{
+		for (final AbstractSyntaxNode child : this.children)
+		{
+			child.collapse();
+		}
 	}
 
 	//Private methods

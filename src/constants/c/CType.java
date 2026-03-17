@@ -30,6 +30,8 @@ public enum CType
 	FLOAT_128("__float128", IASTSimpleDeclSpecifier.t_float128),
 	INT("int", IASTSimpleDeclSpecifier.t_int),
 	INT_128("__int128", IASTSimpleDeclSpecifier.t_int128),
+	LONG("long", -1),
+	SHORT("short", -1),
 	TYPE_OF("typeof", IASTSimpleDeclSpecifier.t_typeof),
 	UNSPECIFIED("", IASTSimpleDeclSpecifier.t_unspecified),
 	VOID("void", IASTSimpleDeclSpecifier.t_void),
