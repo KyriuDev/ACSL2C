@@ -6,11 +6,16 @@ import constants.acsl.others.AcslType;
 import constants.c.CBinaryOperator;
 import misc.Utils;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 /**
  * Name:        BinaryOperationNode.java
- * Content:	    This class defines a BinaryOperationNode with an operator and two PredicateOrTerm children nodes.
+ * Content:	    This class defines a BinaryOperationNode with an operator and (at least) two PredicateOrTerm children
+ * 				nodes.
+ * 				For instance, the expression "n + m" will be represented as a BinaryOperationNode of operator "+",
+ * 				whose children are PredicateOrTermNodes containing respectively "n" and "m".
  * Author:      Quentin Nivon
  * Email:       quentin.nivon@uol.de
  * Creation:    16/03/26
@@ -56,35 +61,49 @@ public class BinaryOperationNode extends PredicateOrTermNode
 	public String checkWellFormedness()
 	{
 		if (this.operator == null
-			|| this.getChildren().size() != 2
-			|| this.getChildren().get(0).getType() != AcslType.PREDICATE_OR_TERM
-			|| this.getChildren().get(1).getType() != AcslType.PREDICATE_OR_TERM)
+			|| this.getChildren().size() < 2)
 		{
 			return String.format(
 				"Binary operation node is malformed:" +
 				"\n\t- Expected non-null operator, got \"%s\";" +
-				"\n\t- Expected 2 children, got %d;" +
-				"\n\t- Expected both children to be predicates or terms, got \"%s\" and \"%s\".",
+				"\n\t- Expected at least 2 children, got %d;" +
+				"\n\t- Expected all children to be predicates or terms.",
 				this.operator == null ? null : this.operator.getOperator(),
-				this.getChildren().size(),
-				!this.getChildren().isEmpty() ? this.getChildren().get(0).getType().getReadableName() : null,
-				this.getChildren().size() > 1 ? this.getChildren().get(1).getType().getReadableName() : null
+				this.getChildren().size()
 			);
+		}
+
+		for (final AbstractSyntaxNode abstractSyntaxNode : this.getChildren())
+		{
+			if (((AcslBaseNode) abstractSyntaxNode).getType() != AcslType.PREDICATE_OR_TERM)
+			{
+				return String.format(
+					"Binary operation node is malformed:" +
+					"\n\t- Expected non-null operator, got \"%s\";" +
+					"\n\t- Expected at least 2 children, got %d;" +
+					"\n\t- Expected all children to be predicates or terms.",
+					this.operator == null ? null : this.operator.getOperator(),
+					this.getChildren().size()
+				);
+			}
 		}
 
 		return null;
 	}
 
 	/**
-	 * A binary operation node can be collapsed in the sense that its OperatorNode child information can be stored
-	 * directly in the node.
-	 * This is what this method performs, thus ending with the removal of the no longer useful child.
+	 * A binary operation node can be collapsed in multiple ways:
+	 * - First, its OperatorNode child information can be stored directly in the binary operation node itself;
+	 * - Second, each of its children being a binary operation node of same operator can be merged with the current one.
+	 * This is what this method performs, thus ending with the removal of the no longer useful children.
 	 */
 	@Override
-	public void collapse()
+	public boolean collapse()
 	{
+		boolean collapsed = false;
 		AbstractSyntaxNode childToRemove = null;
 
+		//Incorporate the binary operator
 		for (final AbstractSyntaxNode child : this.getChildren())
 		{
 			if (child instanceof OperatorNode)
@@ -95,6 +114,7 @@ public class BinaryOperationNode extends PredicateOrTermNode
 				this.setOperator(operator);
 				childToRemove = child;
 				child.removeParent(this);
+				collapsed = true;
 				/*
 					This break is useful to handle malformed BinaryOperationNodes when method "checkWellFormedness()"
 					will be called.
@@ -106,7 +126,41 @@ public class BinaryOperationNode extends PredicateOrTermNode
 
 		this.removeChild(childToRemove);
 
-		super.collapse();
+		//Merge the eventual identical child operators
+		final ArrayList<BinaryOperationNode> childrenToMerge = new ArrayList<>();
+
+		for (final AbstractSyntaxNode child : this.getChildren())
+		{
+			if (child instanceof BinaryOperationNode)
+			{
+				if (((BinaryOperationNode) child).getOperator() == this.operator)
+				{
+					childrenToMerge.add((BinaryOperationNode) child);
+				}
+			}
+		}
+
+		for (final BinaryOperationNode childToMerge : childrenToMerge)
+		{
+			final int childIndex = this.getChildren().indexOf(childToMerge);
+
+			if (childIndex == -1)
+			{
+				throw new RuntimeException();
+			}
+
+			for (int i = 0; i < childToMerge.getChildren().size(); i++)
+			{
+				final AbstractSyntaxNode child = childToMerge.getChildren().get(i);
+				child.removeParent(childToMerge);
+				this.addChildAtIndexAndForceParent(child, childIndex + i);
+			}
+
+			this.removeChildAndForceParent(childToMerge);
+			childToMerge.removeAllChildren();
+		}
+
+		return collapsed || super.collapse();
 	}
 
 	@Override

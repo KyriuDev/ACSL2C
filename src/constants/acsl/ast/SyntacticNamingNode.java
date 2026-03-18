@@ -5,6 +5,20 @@ import constants.acsl.others.AcslPredicateOrTermKind;
 import constants.acsl.others.AcslType;
 import misc.Utils;
 
+/**
+ * Name:        SyntacticNamingNode.java
+ * Content:	    This class defines a SyntacticNamingNode which represents the syntactic naming of an ACSL object, such
+ * 				as a behaviour.
+ * 				It has a NameNode child representing the name of the object, and a PredicateOrTermNode representing the
+ * 				object itself.
+ * 				For instance, the expression "behavior t_is_sorted : [...]" will be represented as a SyntacticNamingNode
+ * 				whose children will be a NameNode containing "t_is_sorted", and a PredicateOrTermNode representing the
+ * 				behaviour's behaviour.
+ * Author:      Quentin Nivon
+ * Email:       quentin.nivon@uol.de
+ * Creation:    18/03/26
+ */
+
 public class SyntacticNamingNode extends PredicateOrTermNode
 {
 	private String name;
@@ -35,7 +49,7 @@ public class SyntacticNamingNode extends PredicateOrTermNode
 		if (this.name == null
 			|| this.name.isEmpty()
 			|| this.getChildren().size() != 1
-			|| this.getChildren().get(0).getType() != AcslType.PREDICATE_OR_TERM)
+			|| ((AcslBaseNode) this.getChildren().get(0)).getType() != AcslType.PREDICATE_OR_TERM)
 		{
 			return String.format(
 				"Syntactic naming node is malformed:" +
@@ -44,7 +58,7 @@ public class SyntacticNamingNode extends PredicateOrTermNode
 				"\n\t- Expected the child to be a predicate or a term, got a \"%s\".",
 				this.name == null ? null : this.name.trim(),
 				this.getChildren().size(),
-				!this.getChildren().isEmpty() ? this.getChildren().get(0).getType().getReadableName() : null
+				!this.getChildren().isEmpty() ? ((AcslBaseNode) this.getChildren().get(0)).getType().getReadableName() : null
 			);
 		}
 
@@ -57,8 +71,9 @@ public class SyntacticNamingNode extends PredicateOrTermNode
 	 * This is what this method performs, thus ending with the removal of the no longer useful child.
 	 */
 	@Override
-	public void collapse()
+	public boolean collapse()
 	{
+		boolean collapsed = false;
 		AbstractSyntaxNode childToRemove = null;
 
 		for (final AbstractSyntaxNode child : this.getChildren())
@@ -68,6 +83,7 @@ public class SyntacticNamingNode extends PredicateOrTermNode
 				this.setName(((NameNode) child).getName());
 				childToRemove = child;
 				child.removeParent(this);
+				collapsed = true;
 				/*
 					This break is useful to handle malformed SyntacticNamingNode when method "checkWellFormedness()"
 					will be called.
@@ -79,7 +95,7 @@ public class SyntacticNamingNode extends PredicateOrTermNode
 
 		this.removeChild(childToRemove);
 
-		super.collapse();
+		return collapsed || super.collapse();
 	}
 
 	@Override

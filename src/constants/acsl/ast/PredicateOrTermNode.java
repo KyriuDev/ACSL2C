@@ -1,6 +1,5 @@
 package constants.acsl.ast;
 
-import ast.AbstractSyntaxNode;
 import constants.acsl.others.AcslPredicateOrTermKind;
 import constants.acsl.others.AcslType;
 
@@ -12,18 +11,16 @@ import constants.acsl.others.AcslType;
  * Creation:    16/03/26
  */
 
-public class PredicateOrTermNode extends AbstractSyntaxNode
+public class PredicateOrTermNode extends AcslBaseNode
 {
-	private AcslPredicateOrTermKind kind;
+	private final AcslPredicateOrTermKind kind;
 	protected String content;
 
 	//Constructors
 
 	public PredicateOrTermNode(final AcslPredicateOrTermKind kind)
 	{
-		super(AcslType.PREDICATE_OR_TERM);
-		this.kind = kind;
-		this.content = null;
+		this(kind, null);
 	}
 
 	public PredicateOrTermNode(final AcslPredicateOrTermKind kind,
@@ -42,6 +39,11 @@ public class PredicateOrTermNode extends AbstractSyntaxNode
 			"Default predicates or terms should not have a content. This method should be overridden by nodes " +
 			"extending this node to handle contents."
 		);
+	}
+
+	public AcslPredicateOrTermKind getKind()
+	{
+		return this.kind;
 	}
 
 	//Private methods

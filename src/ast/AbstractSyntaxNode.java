@@ -1,8 +1,5 @@
 package ast;
 
-import constants.acsl.others.AcslType;
-import misc.Utils;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -16,54 +13,29 @@ import java.util.List;
  * Creation:    10/03/26
  */
 
-public class AbstractSyntaxNode
+public abstract class AbstractSyntaxNode
 {
 	private final ArrayList<AbstractSyntaxNode> children;
 	private final ArrayList<AbstractSyntaxNode> parents;
-	private final AcslType type;
 
 	//Constructors
 
-	public AbstractSyntaxNode(final AcslType type)
+	public AbstractSyntaxNode()
 	{
-		this.type = type;
 		this.children = new ArrayList<>();
 		this.parents = new ArrayList<>();
 	}
 
+	//Abstract methods
+
+	public abstract void stringify(final StringBuilder builder,
+								   final int depth);
+
+	public abstract String checkWellFormedness();
+
+	public abstract boolean collapse();
+
 	//Public methods
-
-	public void stringify(final StringBuilder builder,
-						  final int depth)
-	{
-		builder.append("\n")
-				.append(Utils.repeatTabs(depth))
-				.append(String.format("- %s has ", this.type.getReadableName()));
-
-		if (this.children.isEmpty())
-		{
-			builder.append("no child.");
-		}
-		else if (this.children.size() == 1)
-		{
-			builder.append("1 child:");
-			this.children.iterator().next().stringify(builder, depth + 1);
-		}
-		else
-		{
-			builder.append(String.format("%d children:", this.children.size()));
-
-			for (final AbstractSyntaxNode child : this.children)
-			{
-				child.stringify(builder, depth + 1);
-			}
-		}
-	}
-
-	public AcslType getType()
-	{
-		return this.type;
-	}
 
 	/**
 	 * This method returns the children nodes of the current node in a read-only mode, forcing classical add/remove
@@ -94,7 +66,30 @@ public class AbstractSyntaxNode
 
 	public void addChildAndForceParent(final AbstractSyntaxNode child)
 	{
-		this.children.add(child);
+		this.addChild(child);
+		child.addParent(this);
+	}
+
+	public void addChildAtIndex(final AbstractSyntaxNode child,
+								final int index)
+	{
+		if (index < 0
+			|| index >= this.children.size())
+		{
+			throw new IndexOutOfBoundsException(String.format(
+				"The index should be between 0 and %d, got %d.",
+				this.children.size() - 1,
+				index
+			));
+		}
+
+		this.children.add(index, child);
+	}
+
+	public void addChildAtIndexAndForceParent(final AbstractSyntaxNode child,
+											  final int index)
+	{
+		this.addChildAtIndex(child, index);
 		child.addParent(this);
 	}
 
@@ -105,8 +100,31 @@ public class AbstractSyntaxNode
 
 	public void addParentAndForceChild(final AbstractSyntaxNode parent)
 	{
-		this.parents.add(parent);
+		this.addParent(parent);
 		parent.addChild(this);
+	}
+
+	public void addParentAtIndex(final AbstractSyntaxNode parent,
+						         final int index)
+	{
+		if (index < 0
+			|| index >= this.parents.size())
+		{
+			throw new IndexOutOfBoundsException(String.format(
+				"The index should be between 0 and %d, got %d.",
+				this.parents.size() - 1,
+				index
+			));
+		}
+
+		this.parents.add(index, parent);
+	}
+
+	public void addParentAtIndexAndForceParent(final AbstractSyntaxNode parent,
+						                       final int index)
+	{
+		this.addParentAtIndex(parent, index);
+		parent.addParent(this);
 	}
 
 	public void removeChild(final AbstractSyntaxNode child)
@@ -116,7 +134,7 @@ public class AbstractSyntaxNode
 
 	public void removeChildAndForceParent(final AbstractSyntaxNode child)
 	{
-		this.children.remove(child);
+		this.removeChild(child);
 		child.removeParent(this);
 	}
 
@@ -127,7 +145,7 @@ public class AbstractSyntaxNode
 
 	public void removeParentAndForceChild(final AbstractSyntaxNode parent)
 	{
-		this.parents.remove(parent);
+		this.removeParent(parent);
 		parent.removeChild(this);
 	}
 
@@ -143,7 +161,7 @@ public class AbstractSyntaxNode
 			child.removeParent(this);
 		}
 
-		this.children.clear();
+		this.removeAllChildren();
 	}
 
 	public void removeAllParents()
@@ -158,40 +176,7 @@ public class AbstractSyntaxNode
 			parent.removeChild(this);
 		}
 
-		this.parents.clear();
-	}
-
-	/**
-	 * This method checks whether the given abstract syntax node is "well-formed", in the sense of "coherent with the
-	 * ACSL standard".
-	 * It returns null if the node is well-formed, and a string detailing what makes the current node not well-formed
-	 * otherwise.
-	 * It should be overridden by specific nodes whose structure can be incorrect, yet compliant with the
-	 * defined grammar.
-	 * It can somehow be seen as a (very basic) type checking method.
-	 * Note that in most cases, no coverage guarantee is given, i.e., this method may return "null" even if the
-	 * checked node is malformed.
-	 *
-	 * @return null
-	 */
-	public String checkWellFormedness()
-	{
-		return null;
-	}
-
-	/**
-	 * This method is used to collapse a node whenever it can be collapsed.
-	 * Basic nodes cannot be collapsed, in which case this function has no effect.
-	 * Some nodes, such as BinaryOperationNodes, can be collapsed as the information of their OperatorNode child can
-	 * be stored in the node itself, instead of as a (useless) child node.
-	 * Such collapsable nodes should thus override this method to perform the proper collapse.
-	 */
-	public void collapse()
-	{
-		for (final AbstractSyntaxNode child : this.children)
-		{
-			child.collapse();
-		}
+		this.removeAllParents();
 	}
 
 	//Private methods

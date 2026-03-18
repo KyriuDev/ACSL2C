@@ -1,7 +1,6 @@
 package ast;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -59,10 +58,17 @@ public class AbstractSyntaxTree
 	 * stored in the node itself.
 	 * This method is followed by a call to the "checkWellFormedness()" method which prevents some undesired behaviours
 	 * from happening.
+	 * Note that the collapse may require several applications to properly collapse the tree, thus it is repeated until
+	 * no collapse operations have been performed during the last iteration.
 	 */
 	public void collapseTree()
 	{
-		this.root.collapse();
+		boolean collapsed = this.root.collapse();
+
+		while (collapsed)
+		{
+			collapsed = this.root.collapse();
+		}
 
 		final List<String> incoherences = this.checkWellFormedness();
 
@@ -85,7 +91,7 @@ public class AbstractSyntaxTree
 	//Private methods
 
 	private void checkWellFormedness(final AbstractSyntaxNode currentNode,
-										final ArrayList<String> incoherences)
+									 final ArrayList<String> incoherences)
 	{
 		final String incoherence = currentNode.checkWellFormedness();
 

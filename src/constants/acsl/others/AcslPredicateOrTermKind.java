@@ -16,6 +16,7 @@ public enum AcslPredicateOrTermKind
 	FOR_ALL("forall"),
 	IDENTIFIER("id"),
 	LITERAL("literal"),
+	OLD("old"),
 	RANGE("range"),
 	RESULT("result"),
 	SYNTACTIC_NAMING("syntactic_naming"),

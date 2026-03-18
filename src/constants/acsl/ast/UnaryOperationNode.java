@@ -6,6 +6,16 @@ import constants.acsl.others.AcslType;
 import constants.c.CUnaryOperator;
 import misc.Utils;
 
+/**
+ * Name:        UnaryOperationNode.java
+ * Content:	    This class defines a UnaryOperationNode with a unary operator and a PredicateOrTermNode child.
+ *              For instance, the expression "-n" will be represented as a UnaryOperationNode of operator "-" whose
+ *              child is a PredicateOrTermNode representing "n".
+ * Author:      Quentin Nivon
+ * Email:       quentin.nivon@uol.de
+ * Creation:    18/03/26
+ */
+
 public class UnaryOperationNode extends PredicateOrTermNode
 {
 	private CUnaryOperator operator;
@@ -47,7 +57,7 @@ public class UnaryOperationNode extends PredicateOrTermNode
 	{
 		if (this.operator == null
 			|| this.getChildren().size() != 1
-			|| this.getChildren().get(0).getType() != AcslType.PREDICATE_OR_TERM)
+			|| ((AcslBaseNode) this.getChildren().get(0)).getType() != AcslType.PREDICATE_OR_TERM)
 		{
 			return String.format(
 				"Unary operation node is malformed:" +
@@ -56,7 +66,7 @@ public class UnaryOperationNode extends PredicateOrTermNode
 				"\n\t- Expected the child to be a predicate or a term, got a \"%s\".",
 				this.operator == null ? null : this.operator.getOperator(),
 				this.getChildren().size(),
-				!this.getChildren().isEmpty() ? this.getChildren().get(0).getType().getReadableName() : null
+				!this.getChildren().isEmpty() ? ((AcslBaseNode) this.getChildren().get(0)).getType().getReadableName() : null
 			);
 		}
 
@@ -69,8 +79,9 @@ public class UnaryOperationNode extends PredicateOrTermNode
 	 * This is what this method performs, thus ending with the removal of the no longer useful child.
 	 */
 	@Override
-	public void collapse()
+	public boolean collapse()
 	{
+		boolean collapsed = false;
 		AbstractSyntaxNode childToRemove = null;
 
 		for (final AbstractSyntaxNode child : this.getChildren())
@@ -83,6 +94,7 @@ public class UnaryOperationNode extends PredicateOrTermNode
 				this.setOperator(operator);
 				childToRemove = child;
 				child.removeParent(this);
+				collapsed = true;
 				/*
 					This break is useful to handle malformed UnaryOperationNodes when method "checkWellFormedness()"
 					will be called.
@@ -94,7 +106,7 @@ public class UnaryOperationNode extends PredicateOrTermNode
 
 		this.removeChild(childToRemove);
 
-		super.collapse();
+		return collapsed || super.collapse();
 	}
 
 	@Override

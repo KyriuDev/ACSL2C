@@ -7,6 +7,7 @@ import misc.Utils;
 /**
  * Name:        ResultNode.java
  * Content:	    This class defines a ResultNode corresponding to the ACSL "\result" operator.
+ * 				It should not have any child.
  * Author:      Quentin Nivon
  * Email:       quentin.nivon@uol.de
  * Creation:    17/03/26
@@ -50,5 +51,16 @@ public class ResultNode extends PredicateOrTermNode
 				child.stringify(builder, depth + 1);
 			}
 		}
+	}
+
+	@Override
+	public String checkWellFormedness()
+	{
+		if (!this.getChildren().isEmpty())
+		{
+			return "ResultNode is malformed: it should not have any child.";
+		}
+
+		return null;
 	}
 }

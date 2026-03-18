@@ -81,7 +81,10 @@ public class ACSLParser
 
 		while (scanner.hasNextLine())
 		{
-			builder.append(scanner.nextLine());
+			final String nextLine = scanner.nextLine();
+			builder.append(" "); //Useful to avoid introducing parsing confusions in some rare cases
+			builder.append(nextLine);
+			//System.out.printf("Next line: %s%n", nextLine);
 		}
 
 		scanner.close();
@@ -270,7 +273,7 @@ public class ACSLParser
 			}
 			else
 			{
-				throwUnexpectedElementError(childElement.getTagName(), AcslType.ROOT.getXmlTag());
+				throwUnexpectedElementException(childElement.getTagName(), AcslType.ROOT.getXmlTag());
 			}
 		}
 
@@ -305,7 +308,7 @@ public class ACSLParser
 			}
 			else
 			{
-				throwUnexpectedElementError(childElement.getTagName(), AcslType.FUNCTION_CONTRACT.getXmlTag());
+				throwUnexpectedElementException(childElement.getTagName(), AcslType.FUNCTION_CONTRACT.getXmlTag());
 			}
 		}
 	}
@@ -328,7 +331,7 @@ public class ACSLParser
 			}
 			else
 			{
-				throwUnexpectedElementError(childElement.getTagName(), AcslType.NAMED_BEHAVIOR_LIST.getXmlTag());
+				throwUnexpectedElementException(childElement.getTagName(), AcslType.NAMED_BEHAVIOR_LIST.getXmlTag());
 			}
 		}
 	}
@@ -360,7 +363,7 @@ public class ACSLParser
 			}
 			else
 			{
-				throwUnexpectedElementError(childElement.getTagName(), AcslType.NAMED_BEHAVIOR_LIST.getXmlTag());
+				throwUnexpectedElementException(childElement.getTagName(), AcslType.NAMED_BEHAVIOR_LIST.getXmlTag());
 			}
 		}
 	}
@@ -383,7 +386,7 @@ public class ACSLParser
 			}
 			else
 			{
-				throwUnexpectedElementError(childElement.getTagName(), AcslType.ASSUMES_CLAUSE_LIST.getXmlTag());
+				throwUnexpectedElementException(childElement.getTagName(), AcslType.ASSUMES_CLAUSE_LIST.getXmlTag());
 			}
 		}
 	}
@@ -410,7 +413,7 @@ public class ACSLParser
 			}
 			else
 			{
-				throwUnexpectedElementError(childElement.getTagName(), AcslType.SIMPLE_CLAUSE_LIST.getXmlTag());
+				throwUnexpectedElementException(childElement.getTagName(), AcslType.SIMPLE_CLAUSE_LIST.getXmlTag());
 			}
 		}
 	}
@@ -433,7 +436,7 @@ public class ACSLParser
 			}
 			else
 			{
-				throwUnexpectedElementError(childElement.getTagName(), AcslType.ASSIGN_CLAUSE.getXmlTag());
+				throwUnexpectedElementException(childElement.getTagName(), AcslType.ASSIGN_CLAUSE.getXmlTag());
 			}
 		}
 	}
@@ -457,7 +460,7 @@ public class ACSLParser
 			}
 			else
 			{
-				throwUnexpectedElementError(childElement.getTagName(), AcslType.ENSURES_CLAUSE.getXmlTag());
+				throwUnexpectedElementException(childElement.getTagName(), AcslType.ENSURES_CLAUSE.getXmlTag());
 			}
 		}
 	}
@@ -480,7 +483,7 @@ public class ACSLParser
 			}
 			else
 			{
-				throwUnexpectedElementError(childElement.getTagName(), AcslType.REQUIRES_CLAUSE_LIST.getXmlTag());
+				throwUnexpectedElementException(childElement.getTagName(), AcslType.REQUIRES_CLAUSE_LIST.getXmlTag());
 			}
 		}
 	}
@@ -504,7 +507,7 @@ public class ACSLParser
 			}
 			else
 			{
-				throwUnexpectedElementError(childElement.getTagName(), AcslType.REQUIRES_CLAUSE.getXmlTag());
+				throwUnexpectedElementException(childElement.getTagName(), AcslType.REQUIRES_CLAUSE.getXmlTag());
 			}
 		}
 	}
@@ -525,9 +528,13 @@ public class ACSLParser
 			{
 				this.parseLocation(childElement, locationsNode);
 			}
+			else if (childElement.getTagName().equals(AcslType.PREDICATE_OR_TERM.getXmlTag()))
+			{
+				this.parsePredicateOrTerm(childElement, locationsNode);
+			}
 			else
 			{
-				throwUnexpectedElementError(childElement.getTagName(), AcslType.LOCATIONS.getXmlTag());
+				throwUnexpectedElementException(childElement.getTagName(), AcslType.LOCATIONS.getXmlTag());
 			}
 		}
 	}
@@ -550,7 +557,7 @@ public class ACSLParser
 			}
 			else
 			{
-				throwUnexpectedElementError(childElement.getTagName(), AcslType.LOCATION.getXmlTag());
+				throwUnexpectedElementException(childElement.getTagName(), AcslType.LOCATION.getXmlTag());
 			}
 		}
 	}
@@ -573,7 +580,7 @@ public class ACSLParser
 			}
 			else
 			{
-				throwUnexpectedElementError(childElement.getTagName(), AcslType.BINDERS.getXmlTag());
+				throwUnexpectedElementException(childElement.getTagName(), AcslType.BINDERS.getXmlTag());
 			}
 		}
 	}
@@ -600,7 +607,38 @@ public class ACSLParser
 			}
 			else
 			{
-				throwUnexpectedElementError(childElement.getTagName(), AcslType.BINDER.getXmlTag());
+				throwUnexpectedElementException(childElement.getTagName(), AcslType.BINDER.getXmlTag());
+			}
+		}
+	}
+
+	private void parseVariableIdentifier(final Element variableIdentifier,
+										 final AbstractSyntaxNode currentNode) throws UnhandledElementException
+	{
+		final String kind = variableIdentifier.getAttribute(AcslXmlAttribute.KIND);
+		final String content = variableIdentifier.getTextContent();
+		final VariableIdentifierNode variableIdentifierNode = AstFactory.createVariableIdentifierNode(kind, content);
+		currentNode.addChildAndForceParent(variableIdentifierNode);
+
+		for (int i = 0; i < variableIdentifier.getChildNodes().getLength(); i++)
+		{
+			final Node child = variableIdentifier.getChildNodes().item(i);
+
+			if (child.getNodeType() == Node.TEXT_NODE)
+			{
+				continue;
+			}
+
+			this.assertNodeTypeElement(child);
+			final Element childElement = (Element) child;
+
+			if (childElement.getTagName().equals(AcslType.VARIABLE_IDENTIFIER.getXmlTag()))
+			{
+				this.parseVariableIdentifier(childElement, variableIdentifierNode);
+			}
+			else
+			{
+				throwUnexpectedElementException(childElement.getTagName(), AcslType.VARIABLE_IDENTIFIER.getXmlTag());
 			}
 		}
 	}
@@ -623,7 +661,7 @@ public class ACSLParser
 			}
 			else
 			{
-				throwUnexpectedElementError(childElement.getTagName(), AcslType.TYPES.getXmlTag());
+				throwUnexpectedElementException(childElement.getTagName(), AcslType.TYPES.getXmlTag());
 			}
 		}
 	}
@@ -631,23 +669,13 @@ public class ACSLParser
 	private void parseTypeSpecifier(final Element typeSpecifier,
 									final AbstractSyntaxNode currentNode) throws UnhandledElementException
 	{
-		final AbstractSyntaxNode typesNode = AstFactory.createTypesNode();
+		final String kind = typeSpecifier.getAttribute(AcslXmlAttribute.KIND);
+		final AbstractSyntaxNode typesNode = AstFactory.createTypeSpecifierNode(kind);
 		currentNode.addChildAndForceParent(typesNode);
 
-		for (int i = 0; i < typeSpecifier.getChildNodes().getLength(); i++)
+		if (typeSpecifier.getChildNodes().getLength() != 0)
 		{
-			final Node child = typeSpecifier.getChildNodes().item(i);
-			this.assertNodeTypeElement(child);
-			final Element childElement = (Element) child;
-
-			if (childElement.getTagName().equals(AcslType.TYPE_SPECIFIER.getXmlTag()))
-			{
-				this.parseTypeSpecifier(childElement, typesNode);
-			}
-			else
-			{
-				throwUnexpectedElementError(childElement.getTagName(), AcslType.TYPES.getXmlTag());
-			}
+			throwNoChildrenExpectedException(AcslType.TYPE_SPECIFIER.getXmlTag());
 		}
 	}
 
@@ -725,7 +753,7 @@ public class ACSLParser
 			}
 			else
 			{
-				throwUnexpectedElementError(childElement.getTagName(), AcslType.PREDICATE_OR_TERM.getXmlTag());
+				throwUnexpectedElementException(childElement.getTagName(), AcslType.PREDICATE_OR_TERM.getXmlTag());
 			}
 		}
 	}
@@ -736,9 +764,20 @@ public class ACSLParser
 		final NameNode nameNode = AstFactory.createNameNode(name.getTextContent());
 		currentNode.addChildAndForceParent(nameNode);
 
-		if (!nameNode.getChildren().isEmpty())
+		final NodeList children = name.getChildNodes();
+
+		if (children.getLength() == 1)
 		{
-			throwNewNoChildrenExpectedError(AcslType.NAME.getXmlTag());
+			final Node child = children.item(0);
+
+			if (child.getNodeType() != Node.TEXT_NODE)
+			{
+				throwUnexpectedElementException(((Element) child).getTagName(), AcslType.NAME.getXmlTag());
+			}
+		}
+		else if (children.getLength() != 0)
+		{
+			throwMaxChildrenNumberExceededException(AcslType.NAME.getXmlTag(), 1, children.getLength());
 		}
 	}
 
@@ -760,7 +799,7 @@ public class ACSLParser
 			}
 			else
 			{
-				throwUnexpectedElementError(childElement.getTagName(), AcslType.INDEX.getXmlTag());
+				throwUnexpectedElementException(childElement.getTagName(), AcslType.INDEX.getXmlTag());
 			}
 		}
 	}
@@ -783,7 +822,7 @@ public class ACSLParser
 			}
 			else
 			{
-				throwUnexpectedElementError(childElement.getTagName(), AcslType.LOWER_BOUND.getXmlTag());
+				throwUnexpectedElementException(childElement.getTagName(), AcslType.LOWER_BOUND.getXmlTag());
 			}
 		}
 	}
@@ -806,7 +845,7 @@ public class ACSLParser
 			}
 			else
 			{
-				throwUnexpectedElementError(childElement.getTagName(), AcslType.UPPER_BOUND.getXmlTag());
+				throwUnexpectedElementException(childElement.getTagName(), AcslType.UPPER_BOUND.getXmlTag());
 			}
 		}
 	}
@@ -820,7 +859,7 @@ public class ACSLParser
 
 		if (!operatorNode.getChildren().isEmpty())
 		{
-			throwNewNoChildrenExpectedError(AcslType.OPERATOR.getXmlTag());
+			throwNoChildrenExpectedException(AcslType.OPERATOR.getXmlTag());
 		}
 	}
 
@@ -838,8 +877,8 @@ public class ACSLParser
 		}
 	}
 
-	private void throwUnexpectedElementError(final String currentTag,
-											 final String parentTag) throws UnhandledElementException
+	private void throwUnexpectedElementException(final String currentTag,
+												 final String parentTag) throws UnhandledElementException
 	{
 		throw new UnhandledElementException(String.format(
 			"The tag \"%s\" was not expected as child of a \"%s\" tag.",
@@ -848,11 +887,23 @@ public class ACSLParser
 		));
 	}
 
-	private void throwNewNoChildrenExpectedError(final String nodeTag) throws UnhandledElementException
+	private void throwNoChildrenExpectedException(final String nodeTag) throws UnhandledElementException
 	{
 		throw new UnhandledElementException(String.format(
 			"The tag \"%s\" is not supposed to have children.",
 			Utils.tagify(nodeTag)
+		));
+	}
+
+	private void throwMaxChildrenNumberExceededException(final String nodeTag,
+														 final int maxNbChildren,
+														 final int nbChildren) throws UnhandledElementException
+	{
+		throw new UnhandledElementException(String.format(
+			"The tag \"%s\" is not supposed to have more than %d children but has %d.",
+			Utils.tagify(nodeTag),
+			maxNbChildren,
+			nbChildren
 		));
 	}
 }

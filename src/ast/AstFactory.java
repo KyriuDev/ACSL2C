@@ -1,15 +1,12 @@
 package ast;
 
 import constants.acsl.ast.*;
-import constants.acsl.others.AcslClauseKind;
-import constants.acsl.others.AcslMemoryAllocationSet;
-import constants.acsl.others.AcslPredicateOrTermKind;
-import constants.acsl.others.AcslType;
+import constants.acsl.others.*;
 
 /**
  * Name:        AstFactory.java
- * Content:	    This class contains utility methods to create AbstractSyntaxNodes without the burden of correctly
- * 				using the AbstractSyntaxNode constructors manually, by wrapping them into nicer functions.
+ * Content:	    This class contains utility methods to create AcslBaseNodes without the burden of correctly
+ * 				using the AcslBaseNode constructors manually, by wrapping them into nicer functions.
  * Author:      Quentin Nivon
  * Email:       quentin.nivon@uol.de
  * Creation:    16/03/26
@@ -27,19 +24,19 @@ public class AstFactory
 		return new AssignClauseNode();
 	}
 
-	public static AbstractSyntaxNode createAssumesClauseListNode()
+	public static AcslBaseNode createAssumesClauseListNode()
 	{
-		return new AbstractSyntaxNode(AcslType.ASSUMES_CLAUSE_LIST);
+		return new AcslBaseNode(AcslType.ASSUMES_CLAUSE_LIST);
 	}
 
-	public static AbstractSyntaxNode createBinderNode()
+	public static AcslBaseNode createBinderNode()
 	{
-		return new AbstractSyntaxNode(AcslType.BINDER);
+		return new AcslBaseNode(AcslType.BINDER);
 	}
 
-	public static AbstractSyntaxNode createBindersNode()
+	public static AcslBaseNode createBindersNode()
 	{
-		return new AbstractSyntaxNode(AcslType.BINDERS);
+		return new AcslBaseNode(AcslType.BINDERS);
 	}
 
 	public static BoundaryNode createBoundaryNode(final AcslType type)
@@ -67,32 +64,32 @@ public class AstFactory
 		return new EnsuresClauseNode(clauseKind);
 	}
 
-	public static AbstractSyntaxNode createFunctionContractNode()
+	public static AcslBaseNode createFunctionContractNode()
 	{
-		return new AbstractSyntaxNode(AcslType.FUNCTION_CONTRACT);
+		return new AcslBaseNode(AcslType.FUNCTION_CONTRACT);
 	}
 
-	public static AbstractSyntaxNode createIndexNode()
+	public static AcslBaseNode createIndexNode()
 	{
-		return new AbstractSyntaxNode(AcslType.INDEX);
+		return new AcslBaseNode(AcslType.INDEX);
 	}
 
-	public static AbstractSyntaxNode createLocationNode()
+	public static AcslBaseNode createLocationNode()
 	{
-		return new AbstractSyntaxNode(AcslType.LOCATION);
+		return new AcslBaseNode(AcslType.LOCATION);
 	}
 
-	public static AbstractSyntaxNode createLocationsNode()
+	public static AcslBaseNode createLocationsNode()
 	{
-		return new AbstractSyntaxNode(AcslType.LOCATIONS);
+		return new AcslBaseNode(AcslType.LOCATIONS);
 	}
 
-	public static AbstractSyntaxNode createMemoryAllocationSetNode()
+	public static AcslBaseNode createMemoryAllocationSetNode()
 	{
 		return AstFactory.createMemoryAllocationSetNode(null);
 	}
 
-	public static AbstractSyntaxNode createMemoryAllocationSetNode(final String content)
+	public static AcslBaseNode createMemoryAllocationSetNode(final String content)
 	{
 		return new MemoryAllocationSetNode(
 			content != null
@@ -110,9 +107,9 @@ public class AstFactory
 		return new NameNode(name);
 	}
 
-	public static AbstractSyntaxNode createNamedBehaviorListNode()
+	public static AcslBaseNode createNamedBehaviorListNode()
 	{
-		return new AbstractSyntaxNode(AcslType.NAMED_BEHAVIOR_LIST);
+		return new AcslBaseNode(AcslType.NAMED_BEHAVIOR_LIST);
 	}
 
 	public static OperatorNode createOperatorNode()
@@ -125,9 +122,9 @@ public class AstFactory
 		return new OperatorNode(name);
 	}
 
-	public static AbstractSyntaxNode createPredicateOrTermNode()
+	public static AcslBaseNode createPredicateOrTermNode()
 	{
-		return new AbstractSyntaxNode(AcslType.PREDICATE_OR_TERM);
+		return new AcslBaseNode(AcslType.PREDICATE_OR_TERM);
 	}
 
 	public static PredicateOrTermNode createPredicateOrTermNode(final String kind,
@@ -156,6 +153,10 @@ public class AstFactory
 		else if (kind.equals(AcslPredicateOrTermKind.LITERAL.getName()))
 		{
 			return new LiteralNode(content);
+		}
+		else if (kind.equals(AcslPredicateOrTermKind.OLD.getName()))
+		{
+			return new OldNode();
 		}
 		else if (kind.equals(AcslPredicateOrTermKind.RANGE.getName()))
 		{
@@ -196,23 +197,56 @@ public class AstFactory
 		return new RequiresClauseNode(clauseKind);
 	}
 
-	public static AbstractSyntaxNode createRequiresClauseListNode()
+	public static AcslBaseNode createRequiresClauseListNode()
 	{
-		return new AbstractSyntaxNode(AcslType.REQUIRES_CLAUSE_LIST);
+		return new AcslBaseNode(AcslType.REQUIRES_CLAUSE_LIST);
 	}
 
-	public static AbstractSyntaxNode createRootNode()
+	public static AcslBaseNode createRootNode()
 	{
-		return new AbstractSyntaxNode(AcslType.ROOT);
+		return new AcslBaseNode(AcslType.ROOT);
 	}
 
-	public static AbstractSyntaxNode createSimpleClauseListNode()
+	public static AcslBaseNode createSimpleClauseListNode()
 	{
-		return new AbstractSyntaxNode(AcslType.SIMPLE_CLAUSE_LIST);
+		return new AcslBaseNode(AcslType.SIMPLE_CLAUSE_LIST);
 	}
 
-	public static AbstractSyntaxNode createTypesNode()
+	public static TypeSpecifierNode createTypeSpecifierNode(final String kind)
 	{
-		return new AbstractSyntaxNode(AcslType.TYPES);
+		return new TypeSpecifierNode(AcslTypeSpecifier.getTypeSpecifierFromKind(kind));
+	}
+
+	public static AcslBaseNode createTypesNode()
+	{
+		return new AcslBaseNode(AcslType.TYPES);
+	}
+
+	public static VariableIdentifierNode createVariableIdentifierNode(final String kind,
+																	  final String content)
+	{
+		if (kind.equals(AcslVariableIdentifierKind.ARRAY.getName()))
+		{
+			return new ArrayNode(content);
+		}
+		else if (kind.equals(AcslVariableIdentifierKind.BRACKETS.getName()))
+		{
+			return new BracketsNode(content);
+		}
+		else if (kind.equals(AcslVariableIdentifierKind.IDENTIFIER.getName()))
+		{
+			return new VariableIdentifierNode(content);
+		}
+		else if (kind.equals(AcslVariableIdentifierKind.POINTER.getName()))
+		{
+			return new PointerNode(content);
+		}
+		else
+		{
+			throw new RuntimeException(String.format(
+				"The kind \"%s\" does not correspond to any variable identifier kind.",
+				kind
+			));
+		}
 	}
 }

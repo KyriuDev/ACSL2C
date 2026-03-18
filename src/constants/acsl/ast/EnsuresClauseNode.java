@@ -5,7 +5,16 @@ import constants.acsl.others.AcslClauseKind;
 import constants.acsl.others.AcslType;
 import misc.Utils;
 
-public class EnsuresClauseNode extends AbstractSyntaxNode
+/**
+ * Name:        EnsuresClauseNode.java
+ * Content:	    This class defines an EnsuresClauseNode representing an ensures clause that may have an AcslClauseKind,
+ * 				and whose children are PredicateOrTermNodes.
+ * Author:      Quentin Nivon
+ * Email:       quentin.nivon@uol.de
+ * Creation:    17/03/26
+ */
+
+public class EnsuresClauseNode extends AcslBaseNode
 {
 	private AcslClauseKind clauseKind;
 

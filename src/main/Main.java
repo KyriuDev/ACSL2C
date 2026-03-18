@@ -66,7 +66,7 @@ public class Main
 			if (PERFORM_ACSL_PARSING)
 			{
 				final String BASE_PATH  = "/home/quentin/Documents/Post-doc/Frama-C/examples/working";
-				final String FILE_NAME = "ex8.acsl";
+				final String FILE_NAME = "controller-int-correct.acsl";
 				final File acslCommentFile = new File(BASE_PATH + File.separator + FILE_NAME);
 
 				final ACSLParser parser = new ACSLParser(acslCommentFile);

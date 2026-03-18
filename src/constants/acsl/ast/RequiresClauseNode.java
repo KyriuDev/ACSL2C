@@ -13,7 +13,7 @@ import misc.Utils;
  * Creation:    16/03/26
  */
 
-public class RequiresClauseNode extends AbstractSyntaxNode
+public class RequiresClauseNode extends AcslBaseNode
 {
 	private AcslClauseKind clauseKind;
 

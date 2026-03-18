@@ -4,6 +4,17 @@ import ast.AbstractSyntaxNode;
 import constants.acsl.others.AcslPredicateOrTermKind;
 import misc.Utils;
 
+/**
+ * Name:        LiteralNode.java
+ * Content:	    This class defines a LiteralNode representing a literal, that is, a boolean value, an integer, a real,
+ * 				an identifier, or whatever that indeed belongs to the ACSL comment.
+ * 				For instance, expression "n > 0" will be represented as a BinaryOperationNode with two LiteralNodes
+ * 				children, whose content is respectively "n" and "0".
+ * Author:      Quentin Nivon
+ * Email:       quentin.nivon@uol.de
+ * Creation:    17/03/26
+ */
+
 public class LiteralNode extends PredicateOrTermNode
 {
 	//Constructors

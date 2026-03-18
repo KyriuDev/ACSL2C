@@ -4,7 +4,17 @@ import ast.AbstractSyntaxNode;
 import constants.acsl.others.AcslType;
 import misc.Utils;
 
-public class BehaviorNode extends AbstractSyntaxNode
+/**
+ * Name:        BehaviorNode.java
+ * Content:	    This class defines a BehaviorNode representing a behaviour definition having a specific identifier,
+ * 				and whose children are either of type AcslType.ASSUMES_CLAUSE_LIST, AcslType.REQUIRES_CLAUSE_LIST, or
+ * 				AcslType.SIMPLE_CLAUSE_LIST.
+ * Author:      Quentin Nivon
+ * Email:       quentin.nivon@uol.de
+ * Creation:    17/03/26
+ */
+
+public class BehaviorNode extends AcslBaseNode
 {
 	private String id;
 

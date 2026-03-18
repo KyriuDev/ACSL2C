@@ -1,11 +1,20 @@
 package constants.acsl.ast;
 
 import ast.AbstractSyntaxNode;
-import constants.acsl.others.AcslClauseKind;
 import constants.acsl.others.AcslType;
 import misc.Utils;
 
-public class MemoryAllocationSetNode extends AbstractSyntaxNode
+/**
+ * Name:        MemoryAllocationSetNode.java
+ * Content:	    This class defines a MemoryAllocationSetNode representing a portion of memory being allocated (called
+ * 				"tset" in ACSL).
+ * 				For now, it supports only empty allocations through its boolean value "isEmpty", and thus has no child.
+ * Author:      Quentin Nivon
+ * Email:       quentin.nivon@uol.de
+ * Creation:    17/03/26
+ */
+
+public class MemoryAllocationSetNode extends AcslBaseNode
 {
 	private boolean isEmpty;
 

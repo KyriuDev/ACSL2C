@@ -5,29 +5,23 @@ import constants.acsl.others.AcslPredicateOrTermKind;
 import misc.Utils;
 
 /**
- * Name:        RangeNode.java
- * Content:	    This class defines a RangeNode representing a range between an upper bound and a lower bound.
- * 				According to the ACSL manual, ranges do not require bounds, in which case the range can take any correct
- * 				value in its field of definition (-2,147,483,648 to 2,147,483,647 for a C "int" for instance).
- * 				For instance, the expression "t+(0 .. n-1)" will be represented as a BinaryOperationNode having two
- * 				children, a PredicateOrTermNode representing "t", and a RangeNode representing "0 .. n-1".
+ * Name:        OldNode.java
+ * Content:	    This class defines an OldNode representing the "\old" ACSL operand.
+ * 				It must have exactly one PredicateOrTermNode child describing the content of this operand.
+ * 				For instance, the expression "\old(a)" will be represented as an OldNode having a PredicateOrTermNode
+ * 				child representing "a".
  * Author:      Quentin Nivon
  * Email:       quentin.nivon@uol.de
  * Creation:    17/03/26
  */
 
-public class RangeNode extends PredicateOrTermNode
+public class OldNode extends PredicateOrTermNode
 {
 	//Constructors
 
-	public RangeNode()
+	public OldNode()
 	{
-		super(AcslPredicateOrTermKind.RANGE);
-	}
-
-	public RangeNode(final String content)
-	{
-		super(AcslPredicateOrTermKind.RANGE, content);
+		super(AcslPredicateOrTermKind.OLD);
 	}
 
 	//Overrides
@@ -38,7 +32,7 @@ public class RangeNode extends PredicateOrTermNode
 	{
 		builder.append("\n")
 				.append(Utils.repeatTabs(depth))
-				.append("- Range has ");
+				.append("- Old (\"\\old\") has ");
 
 		if (this.getChildren().isEmpty())
 		{
@@ -59,4 +53,8 @@ public class RangeNode extends PredicateOrTermNode
 			}
 		}
 	}
+
+	//Public methods
+
+
 }
