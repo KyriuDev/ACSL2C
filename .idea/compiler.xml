@@ -6,7 +6,8 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
-        <module name="ACSLParser" />
+        <module name="ACSLParser (1)" />
+        <module name="eclipse-cdt" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel target="23" />
