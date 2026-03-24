@@ -47,8 +47,8 @@
     </repository>
   </repositories>
   <properties>
+    <maven.release>17</maven.release>
     <maven.compiler.target>17</maven.compiler.target>
     <maven.compiler.source>17</maven.compiler.source>
-    <maven.release>17</maven.release>
   </properties>
 </project>
