@@ -1,5 +1,8 @@
 package main;
 
+import ast.AbstractSyntaxTree;
+import ast.c.EclipseCDT2Internal;
+import constants.CommandLineOption;
 import constants.c.CProgram;
 import misc.CommandLineParser;
 import org.eclipse.cdt.internal.core.dom.parser.c.CASTTranslationUnit;
@@ -11,6 +14,7 @@ import visitors.Visitors;
 import writing.Writer;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.Collections;
 
 /**
@@ -23,17 +27,30 @@ import java.util.Collections;
 
 public class Main
 {
-	public static final boolean PERFORM_ALL_STEPS = false;
+	public static final boolean PARSE_FROM_FILE = true;
+	public static final boolean PERFORM_ALL_STEPS = true;
 	public static final boolean PERFORM_ACSL_PARSING = true;
 
 	public static void main(final String[] args) throws Exception
 	{
+		System.out.println("Args: " + Arrays.toString(args));
 		final CommandLineParser commandLineParser = new CommandLineParser(args);
 
 		if (PERFORM_ALL_STEPS)
 		{
-			final CParser CParser = new CParser(CProgram.PROGRAM_1_WITH_ACSL_COMMENT);
+			final CParser CParser;
+
+			if (PARSE_FROM_FILE)
+			{
+				CParser = new CParser((File) commandLineParser.get(CommandLineOption.C_FILE));
+			}
+			else
+			{
+				CParser = new CParser(CProgram.SV_COMP_MEMSAFETY_960521_1_1);
+			}
+
 			final CASTTranslationUnit translationUnit = (CASTTranslationUnit) CParser.parse();
+			final AbstractSyntaxTree cProgramTree = EclipseCDT2Internal.translate(translationUnit);
 
 			System.out.println("----------------- LINEAR PROGRAM -------------------\n");
 
@@ -44,6 +61,8 @@ public class Main
 			final RecursiveVisitor recursiveVisitor = new RecursiveVisitor(translationUnit);
 			recursiveVisitor.printAST();
 
+			System.out.println("C program internal tree:\n\n" + cProgramTree.toString());
+
 			System.out.println("\n----------------- COMMENTS HANDLING -------------------\n");
 
 			final CommentsHandler commentsHandler = new CommentsHandler(translationUnit);
@@ -52,8 +71,8 @@ public class Main
 
 			System.out.println("\n----------------- GENERATING AST FROM JAVA -------------------\n");
 
-			final ACSLParser parser = new ACSLParser(Collections.singletonList(commentsHandler.getRandomComment()));
-			parser.parse();
+			/*final ACSLParser parser = new ACSLParser(Collections.singletonList(commentsHandler.getRandomComment()));
+			parser.parse();*/
 
 
 			System.out.println("\n----------------- WRITING TO FILE -------------------\n");

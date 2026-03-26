@@ -28,13 +28,15 @@ public class CProgram
 	;
 
 	public static final String PROGRAM_1_WITH_LINE_BREAKS =
-		"int main() {\n" +
-			"int x = 5;\n" +
-			"int y = 7;\n" +
-			"int sum = x + y;\n\n" +
-
-			"return 0;\n" +
-		"}"
+		"""
+		int main() {
+			int x = 5;
+			int y = 7;
+			int sum = x + y;
+			
+			return 0;
+		}
+		"""
 	;
 
 	public static final String PROGRAM_1_WITH_COMMENT =
@@ -218,4 +220,44 @@ public class CProgram
 			"return;\n" +
 		"}"
 	;
+
+	//Some SV-COMP programs
+
+	public static final String SV_COMP_MEMSAFETY_960521_1_1 =
+		"""
+			 extern void abort(void);
+			 #include <assert.h>
+			 void reach_error() { assert(0); }
+			
+			 #include <stdlib.h>
+			
+			 int *a, *b;
+			 int n;
+			
+			 #define BLOCK_SIZE 128
+			
+			 void foo ()
+			 {
+			   int i;
+			   for (i = 0; i < n; i++)
+				 a[i] = -1;
+			   for (i = 0; i < BLOCK_SIZE - 1; i++)
+				 b[i] = -1;
+			 }
+			
+			 int main ()
+			 {
+			   n = BLOCK_SIZE;
+			   a = malloc (n * sizeof(*a));
+			   b = malloc (n * sizeof(*b));
+			   *b++ = 0;
+			   foo ();
+			   if (b[-1])
+			   { free(a); free(b); } /* invalid free (b was iterated) */
+			   else if (true)
+			   { free(a); free(b); } /* ditto */
+			
+			   return 0;
+			 }							
+		""";
 }

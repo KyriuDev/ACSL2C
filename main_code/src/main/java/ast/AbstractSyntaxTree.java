@@ -61,7 +61,7 @@ public class AbstractSyntaxTree
 	 * Note that the collapse may require several applications to properly collapse the tree, thus it is repeated until
 	 * no collapse operations have been performed during the last iteration.
 	 */
-	public void collapseTree()
+	public void collapse()
 	{
 		boolean collapsed = this.root.collapse();
 

@@ -33,7 +33,7 @@ public enum CType
 	LONG("long", -1),
 	SHORT("short", -1),
 	TYPE_OF("typeof", IASTSimpleDeclSpecifier.t_typeof),
-	UNSPECIFIED("", IASTSimpleDeclSpecifier.t_unspecified),
+	UNSPECIFIED("caca", IASTSimpleDeclSpecifier.t_unspecified),
 	VOID("void", IASTSimpleDeclSpecifier.t_void),
 	W_CHAR_T("w_char_t", IASTSimpleDeclSpecifier.t_wchar_t),
 	;

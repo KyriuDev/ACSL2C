@@ -1,6 +1,6 @@
 import os
 
-JAR_FILES_PATH = "/home/quentin/Documents/Post-doc/Nicola/Eclipse_CDT/jars"
+JAR_FILES_DIR = "/home/quentin/Documents/Post-doc/Nicola/Eclipse_CDT/jars"
 POM_PATH = "/home/quentin/IdeaProjects/ACSLParser/eclipse_cdt"
 POM_FILE_NAME = "pom.xml"
 
@@ -20,7 +20,7 @@ def main():
         pom_file.write("</project>")
 
 def write_deps(pom_file):
-    for file in os.listdir(JAR_FILES_PATH):
+    for file in os.listdir(JAR_FILES_DIR):
         if file.endswith(".jar"):
             pom_file.write("\n\t\t<dependency>\n")
             pom_file.write("\t\t\t<groupId>local.libs</groupId>\n")

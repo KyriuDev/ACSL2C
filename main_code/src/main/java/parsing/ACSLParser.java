@@ -2,9 +2,9 @@ package parsing;
 
 import ast.AbstractSyntaxNode;
 import ast.AbstractSyntaxTree;
-import ast.AstFactory;
+import ast.acsl.AcslFactory;
+import ast.acsl.*;
 import constants.ReturnCode;
-import constants.acsl.ast.*;
 import constants.acsl.others.AcslClauseKind;
 import constants.acsl.others.AcslType;
 import constants.acsl.xml.AcslXmlAttribute;
@@ -123,7 +123,7 @@ public class ACSLParser
 			System.out.println("\nTree before collapse:");
 			System.out.println(commentTree);
 			System.out.println("\nTree after collapse:");
-			commentTree.collapseTree();
+			commentTree.collapse();
 			System.out.println(commentTree);
 		}
 	}
@@ -250,7 +250,7 @@ public class ACSLParser
 	private AbstractSyntaxTree buildTreeFromDocument(final String commentFilePath,
 													 final Document document) throws UnhandledElementException
 	{
-		final AbstractSyntaxTree abstractSyntaxTree = new AbstractSyntaxTree(AstFactory.createRootNode());
+		final AbstractSyntaxTree abstractSyntaxTree = new AbstractSyntaxTree(AcslFactory.createRootNode());
 		final NodeList rootList = document.getElementsByTagName(AcslType.ROOT.getXmlTag());
 
 		if (rootList == null
@@ -285,7 +285,7 @@ public class ACSLParser
 	private void parseFunctionContract(final Element functionContract,
 									   final AbstractSyntaxNode currentNode) throws UnhandledElementException
 	{
-		final AbstractSyntaxNode functionContractNode = AstFactory.createFunctionContractNode();
+		final AbstractSyntaxNode functionContractNode = AcslFactory.createFunctionContractNode();
 		currentNode.addChildAndForceParent(functionContractNode);
 
 		for (int i = 0; i < functionContract.getChildNodes().getLength(); i++)
@@ -316,7 +316,7 @@ public class ACSLParser
 	private void parseNamedBehaviorList(final Element namedBehaviorList,
 										final AbstractSyntaxNode currentNode) throws UnhandledElementException
 	{
-		final AbstractSyntaxNode namedBehaviorListNode = AstFactory.createNamedBehaviorListNode();
+		final AbstractSyntaxNode namedBehaviorListNode = AcslFactory.createNamedBehaviorListNode();
 		currentNode.addChildAndForceParent(namedBehaviorListNode);
 
 		for (int i = 0; i < namedBehaviorList.getChildNodes().getLength(); i++)
@@ -340,7 +340,7 @@ public class ACSLParser
 							   final AbstractSyntaxNode currentNode) throws UnhandledElementException
 	{
 		final String id = behavior.getAttribute(AcslXmlAttribute.IDENTIFIER);
-		final BehaviorNode behaviorNode = AstFactory.createBehaviorNode(id);
+		final BehaviorNode behaviorNode = AcslFactory.createBehaviorNode(id);
 		currentNode.addChildAndForceParent(behaviorNode);
 
 		for (int i = 0; i < behavior.getChildNodes().getLength(); i++)
@@ -371,7 +371,7 @@ public class ACSLParser
 	private void parseAssumesClauseList(final Element assumesClauseList,
 									    final AbstractSyntaxNode currentNode) throws UnhandledElementException
 	{
-		final AbstractSyntaxNode assumesClauseListNode = AstFactory.createAssumesClauseListNode();
+		final AbstractSyntaxNode assumesClauseListNode = AcslFactory.createAssumesClauseListNode();
 		currentNode.addChildAndForceParent(assumesClauseListNode);
 
 		for (int i = 0; i < assumesClauseList.getChildNodes().getLength(); i++)
@@ -394,7 +394,7 @@ public class ACSLParser
 	private void parseSimpleClauseList(final Element simpleClauseList,
 							           final AbstractSyntaxNode currentNode) throws UnhandledElementException
 	{
-		final AbstractSyntaxNode simpleClauseListNode = AstFactory.createSimpleClauseListNode();
+		final AbstractSyntaxNode simpleClauseListNode = AcslFactory.createSimpleClauseListNode();
 		currentNode.addChildAndForceParent(simpleClauseListNode);
 
 		for (int i = 0; i < simpleClauseList.getChildNodes().getLength(); i++)
@@ -421,7 +421,7 @@ public class ACSLParser
 	private void parseAssignClause(final Element assignClause,
 								   final AbstractSyntaxNode currentNode) throws UnhandledElementException
 	{
-		final AssignClauseNode assignClauseNode = AstFactory.createAssignClauseNode();
+		final AssignClauseNode assignClauseNode = AcslFactory.createAssignClauseNode();
 		currentNode.addChildAndForceParent(assignClauseNode);
 
 		for (int i = 0; i < assignClause.getChildNodes().getLength(); i++)
@@ -445,7 +445,7 @@ public class ACSLParser
 								    final AbstractSyntaxNode currentNode) throws UnhandledElementException
 	{
 		final String clauseKind = ensuresClause.getAttribute(AcslXmlAttribute.KIND);
-		final EnsuresClauseNode ensuresClauseNode = AstFactory.createEnsuresClauseNode(AcslClauseKind.getKindFromName(clauseKind));
+		final EnsuresClauseNode ensuresClauseNode = AcslFactory.createEnsuresClauseNode(AcslClauseKind.getKindFromName(clauseKind));
 		currentNode.addChildAndForceParent(ensuresClauseNode);
 
 		for (int i = 0; i < ensuresClause.getChildNodes().getLength(); i++)
@@ -468,7 +468,7 @@ public class ACSLParser
 	private void parseRequiresClauseList(final Element requiresClauseList,
 										 final AbstractSyntaxNode currentNode) throws UnhandledElementException
 	{
-		final AbstractSyntaxNode requiresClauseListNode = AstFactory.createRequiresClauseListNode();
+		final AbstractSyntaxNode requiresClauseListNode = AcslFactory.createRequiresClauseListNode();
 		currentNode.addChildAndForceParent(requiresClauseListNode);
 
 		for (int i = 0; i < requiresClauseList.getChildNodes().getLength(); i++)
@@ -492,7 +492,7 @@ public class ACSLParser
 									 final AbstractSyntaxNode currentNode) throws UnhandledElementException
 	{
 		final String clauseKind = requiresClause.getAttribute(AcslXmlAttribute.KIND);
-		final RequiresClauseNode requiresClauseNode = AstFactory.createRequiresClauseNode(AcslClauseKind.getKindFromName(clauseKind));
+		final RequiresClauseNode requiresClauseNode = AcslFactory.createRequiresClauseNode(AcslClauseKind.getKindFromName(clauseKind));
 		currentNode.addChildAndForceParent(requiresClauseNode);
 
 		for (int i = 0; i < requiresClause.getChildNodes().getLength(); i++)
@@ -515,7 +515,7 @@ public class ACSLParser
 	private void parseLocations(final Element locations,
 								final AbstractSyntaxNode currentNode) throws UnhandledElementException
 	{
-		final AbstractSyntaxNode locationsNode = AstFactory.createLocationsNode();
+		final AbstractSyntaxNode locationsNode = AcslFactory.createLocationsNode();
 		currentNode.addChildAndForceParent(locationsNode);
 
 		for (int i = 0; i < locations.getChildNodes().getLength(); i++)
@@ -542,7 +542,7 @@ public class ACSLParser
 	private void parseLocation(final Element locations,
 							   final AbstractSyntaxNode currentNode) throws UnhandledElementException
 	{
-		final AbstractSyntaxNode locationNode = AstFactory.createLocationNode();
+		final AbstractSyntaxNode locationNode = AcslFactory.createLocationNode();
 		currentNode.addChildAndForceParent(locationNode);
 
 		for (int i = 0; i < locations.getChildNodes().getLength(); i++)
@@ -565,7 +565,7 @@ public class ACSLParser
 	private void parseBinders(final Element binders,
 							  final AbstractSyntaxNode currentNode) throws UnhandledElementException
 	{
-		final AbstractSyntaxNode bindersNode = AstFactory.createBindersNode();
+		final AbstractSyntaxNode bindersNode = AcslFactory.createBindersNode();
 		currentNode.addChildAndForceParent(bindersNode);
 
 		for (int i = 0; i < binders.getChildNodes().getLength(); i++)
@@ -588,7 +588,7 @@ public class ACSLParser
 	private void parseBinder(final Element binder,
 							 final AbstractSyntaxNode currentNode) throws UnhandledElementException
 	{
-		final AbstractSyntaxNode binderNode = AstFactory.createBinderNode();
+		final AbstractSyntaxNode binderNode = AcslFactory.createBinderNode();
 		currentNode.addChildAndForceParent(binderNode);
 
 		for (int i = 0; i < binder.getChildNodes().getLength(); i++)
@@ -617,7 +617,7 @@ public class ACSLParser
 	{
 		final String kind = variableIdentifier.getAttribute(AcslXmlAttribute.KIND);
 		final String content = variableIdentifier.getTextContent();
-		final VariableIdentifierNode variableIdentifierNode = AstFactory.createVariableIdentifierNode(kind, content);
+		final VariableIdentifierNode variableIdentifierNode = AcslFactory.createVariableIdentifierNode(kind, content);
 		currentNode.addChildAndForceParent(variableIdentifierNode);
 
 		for (int i = 0; i < variableIdentifier.getChildNodes().getLength(); i++)
@@ -646,7 +646,7 @@ public class ACSLParser
 	private void parseTypes(final Element types,
 							final AbstractSyntaxNode currentNode) throws UnhandledElementException
 	{
-		final AbstractSyntaxNode typesNode = AstFactory.createTypesNode();
+		final AbstractSyntaxNode typesNode = AcslFactory.createTypesNode();
 		currentNode.addChildAndForceParent(typesNode);
 
 		for (int i = 0; i < types.getChildNodes().getLength(); i++)
@@ -670,7 +670,7 @@ public class ACSLParser
 									final AbstractSyntaxNode currentNode) throws UnhandledElementException
 	{
 		final String kind = typeSpecifier.getAttribute(AcslXmlAttribute.KIND);
-		final AbstractSyntaxNode typesNode = AstFactory.createTypeSpecifierNode(kind);
+		final AbstractSyntaxNode typesNode = AcslFactory.createTypeSpecifierNode(kind);
 		currentNode.addChildAndForceParent(typesNode);
 
 		if (typeSpecifier.getChildNodes().getLength() != 0)
@@ -683,7 +683,7 @@ public class ACSLParser
 										final AbstractSyntaxNode currentNode) throws UnhandledElementException
 	{
 		final String content = location.getTextContent();
-		final AbstractSyntaxNode memoryAllocationSet = AstFactory.createMemoryAllocationSetNode(content);
+		final AbstractSyntaxNode memoryAllocationSet = AcslFactory.createMemoryAllocationSetNode(content);
 		currentNode.addChildAndForceParent(memoryAllocationSet);
 
 		for (int i = 0; i < location.getChildNodes().getLength(); i++)
@@ -705,7 +705,7 @@ public class ACSLParser
 	{
 		final String predicateOrTermKind = predicateOrTerm.getAttribute(AcslXmlAttribute.KIND);
 		final String predicateOrTermContent = predicateOrTerm.getTextContent();
-		final PredicateOrTermNode predicateOrTermNode = AstFactory.createPredicateOrTermNode(
+		final PredicateOrTermNode predicateOrTermNode = AcslFactory.createPredicateOrTermNode(
 			predicateOrTermKind,
 			predicateOrTermContent
 		);
@@ -761,7 +761,7 @@ public class ACSLParser
 	private void parseName(final Element name,
 						   final AbstractSyntaxNode currentNode) throws UnhandledElementException
 	{
-		final NameNode nameNode = AstFactory.createNameNode(name.getTextContent());
+		final NameNode nameNode = AcslFactory.createNameNode(name.getTextContent());
 		currentNode.addChildAndForceParent(nameNode);
 
 		final NodeList children = name.getChildNodes();
@@ -784,7 +784,7 @@ public class ACSLParser
 	private void parseIndex(final Element index,
 							final AbstractSyntaxNode currentNode) throws UnhandledElementException
 	{
-		final AbstractSyntaxNode indexNode = AstFactory.createIndexNode();
+		final AbstractSyntaxNode indexNode = AcslFactory.createIndexNode();
 		currentNode.addChildAndForceParent(indexNode);
 
 		for (int i = 0; i < index.getChildNodes().getLength(); i++)
@@ -807,7 +807,7 @@ public class ACSLParser
 	private void parseLowerBound(final Element lowerBound,
 								 final AbstractSyntaxNode currentNode) throws UnhandledElementException
 	{
-		final AbstractSyntaxNode lowerBoundNode = AstFactory.createBoundaryNode(AcslType.LOWER_BOUND);
+		final AbstractSyntaxNode lowerBoundNode = AcslFactory.createBoundaryNode(AcslType.LOWER_BOUND);
 		currentNode.addChildAndForceParent(lowerBoundNode);
 
 		for (int i = 0; i < lowerBound.getChildNodes().getLength(); i++)
@@ -830,7 +830,7 @@ public class ACSLParser
 	private void parseUpperBound(final Element upperBound,
 								 final AbstractSyntaxNode currentNode) throws UnhandledElementException
 	{
-		final AbstractSyntaxNode lowerBoundNode = AstFactory.createBoundaryNode(AcslType.UPPER_BOUND);
+		final AbstractSyntaxNode lowerBoundNode = AcslFactory.createBoundaryNode(AcslType.UPPER_BOUND);
 		currentNode.addChildAndForceParent(lowerBoundNode);
 
 		for (int i = 0; i < upperBound.getChildNodes().getLength(); i++)
@@ -854,7 +854,7 @@ public class ACSLParser
 							   final AbstractSyntaxNode currentNode) throws UnhandledElementException
 	{
 		final String operatorName = operator.getTextContent();
-		final OperatorNode operatorNode = AstFactory.createOperatorNode(operatorName);
+		final OperatorNode operatorNode = AcslFactory.createOperatorNode(operatorName);
 		currentNode.addChildAndForceParent(operatorNode);
 
 		if (!operatorNode.getChildren().isEmpty())

@@ -1,8 +1,9 @@
 package visitors;
 
+import ast.c.IDeclarationSpecifierNode;
 import constants.*;
 import constants.c.CBinaryOperator;
-import constants.c.CDeclarationSpecifier;
+import constants.c.CStorageClass;
 import constants.c.CType;
 import constants.c.CUnaryOperator;
 import exceptions.UnhandledElementException;
@@ -144,7 +145,7 @@ public class RecursiveVisitor
 		{
 			final CASTSimpleDeclSpecifier simpleDeclSpecifier = (CASTSimpleDeclSpecifier) node;
 
-			return CDeclarationSpecifier.convertEclipseCDTTypesToThis(simpleDeclSpecifier.getStorageClass()).getSpecifier()
+			return CStorageClass.convertEclipseCDTTypesToThis(simpleDeclSpecifier.getStorageClass()).getStorageClass()
 					+ (simpleDeclSpecifier.getStorageClass() == IASTDeclSpecifier.sc_unspecified ? "" : " ")
 					+ CType.convertEclipseCDTTypesToThis(simpleDeclSpecifier.getType()).getType();
 
@@ -214,16 +215,56 @@ public class RecursiveVisitor
 			final CASTUnaryExpression unaryExpression = (CASTUnaryExpression) node;
 			return CUnaryOperator.convertEclipseCDTUnaryOperatorToThis(unaryExpression.getOperator()).getOperator();
 		}
+		else if (node instanceof CASTPointer)
+		{
+			return "*";
+		}
+		else if (node instanceof CASTForStatement)
+		{
+			return "for";
+		}
+		else if (node instanceof CASTArraySubscriptExpression)
+		{
+			return "[]";
+		}
+		else if (node instanceof CASTIfStatement)
+		{
+			return "if";
+		}
 		else if (node instanceof CASTName)
 		{
 			return "CASTName: " + node;
 		}
+		else if (node instanceof CASTNullStatement)
+		{
+			return "null";
+		}
+		else if (node instanceof CASTTypedefNameSpecifier)
+		{
+			return CStorageClass.convertEclipseCDTTypesToThis(((CASTTypedefNameSpecifier) node).getStorageClass()).getStorageClass()
+					+ (((CASTTypedefNameSpecifier) node).isConst() ? " const" : "")
+					+ (((CASTTypedefNameSpecifier) node).isVolatile() ? " volatile" : "")
+					+ (((CASTTypedefNameSpecifier) node).isInline() ? " inline" : "")
+					+ (((CASTTypedefNameSpecifier) node).isRestrict() ? " restrict" : "")
+					;
+		}
+		else if (node instanceof CASTLiteralExpression)
+		{
+			return String.format("Literal (%s)", node.toString());
+		}
+		else if ((node instanceof CASTProblemDeclaration)
+				|| (node instanceof CASTProblem))
+		{
+			System.out.println(Color.getRedMessage(
+				"Error: The C program is malformed, some of its content could not be read! The generated AST might" +
+				" consequently be erroneous!"
+			));
+		}
 		else
 		{
-			System.out.printf("Node type \"%s\" is not supported yet.%n", node.toString());
-			/*throw new UnsupportedOperationException(
-				String.format("Node type \"%s\" is not supported yet.", node.toString())
-			);*/
+			System.out.printf(Color.getYellowMessage(
+				"Warning: Node type \"%s\" is not supported yet.%n"), node.toString()
+			);
 		}
 
 		return "";

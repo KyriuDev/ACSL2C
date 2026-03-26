@@ -18,7 +18,11 @@ import java.util.Scanner;
  * Content:     This class aims at parsing a given C program and at returning its corresponding AST.
  *				It basically wraps the parser of Eclipse-CDT with utility functions and hides the details to the
  * 				end user.
- * 				Note that the implementation of the parser in Eclipse-CDT does not seem to consider the comments.
+ * 				In addition to the "classical" elements that can be view directly by traversing the AST, one can access
+ * 				the following information of the C file that is not directly stored in the AST:
+ * 				- C Comments via IASTTranslationUnit.getComments();
+ * 				- C Include directives (#include <my_file>) via IASTTranslationUnit.getIncludeDirectives();
+ * 				- C Macro definitions (#DEFINE <name> <value>) via IASTTranslationUnit.getMacroDefinitions();
  * 				TODO: Manage the (ACSL) comments with SYNTAX
  * Author:      Quentin Nivon
  * Email:       quentin.nivon@uol.de
@@ -54,12 +58,14 @@ public class CParser
 		while (scanner.hasNextLine())
 		{
 			final String line = scanner.nextLine();
-			builder.append(line);
+			builder.append(line)
+					.append("\n");
 		}
 
 		scanner.close();
 
 		this.program = builder.toString();
+		System.out.println("Read program:\n\n" + this.program);
 	}
 
 	//Public methods
@@ -77,6 +83,7 @@ public class CParser
 	 * Functional, Actively Maintained, Open Source C++ Parser" from Piatov, Janes, Sillitti and Succi.
 	 * The only change that I made to it is the use of "GCCLanguage" instead of "GPPLanguage" in the return statement.
 	 * I currently (27/02/26) do not know what all the given options are used for, but it seems to work.
+	 * TODO: Try to find a way to avoid macros to be replaced by their actual values during parsing
 	 *
 	 * @param programToParse the array of chars corresponding to the program to parse
 	 * @return an IASTTranslationUnit, the root node of the generated AST
@@ -93,7 +100,7 @@ public class CParser
 		final int options = ILanguage.OPTION_IS_SOURCE_UNIT;
 		final IParserLogService logService = new DefaultLogService();
 
-		return GCCLanguage.getDefault().getASTTranslationUnit(
+		final IASTTranslationUnit translationUnit = GCCLanguage.getDefault().getASTTranslationUnit(
 			fileContent,
 			scannerInfo,
 			fileContentProvider,
@@ -101,5 +108,7 @@ public class CParser
 			options,
 			logService
 		);
+
+		return translationUnit;
 	}
 }

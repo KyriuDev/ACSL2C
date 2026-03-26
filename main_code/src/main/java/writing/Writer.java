@@ -2,7 +2,7 @@ package writing;
 
 import constants.*;
 import constants.c.CBinaryOperator;
-import constants.c.CDeclarationSpecifier;
+import constants.c.CStorageClass;
 import constants.c.CType;
 import constants.c.CUnaryOperator;
 import dto.CComment;
@@ -298,10 +298,10 @@ public class Writer
 			printWriter.print(Utils.addLeadingTabulations(nbTabs));
 		}
 
-		final CDeclarationSpecifier declarationSpecifier = CDeclarationSpecifier.convertEclipseCDTTypesToThis(declSpecifier.getStorageClass());
-		printWriter.print(declarationSpecifier.getSpecifier());
+		final CStorageClass declarationSpecifier = CStorageClass.convertEclipseCDTTypesToThis(declSpecifier.getStorageClass());
+		printWriter.print(declarationSpecifier.getStorageClass());
 
-		if (declarationSpecifier != CDeclarationSpecifier.UNSPECIFIED)
+		if (declarationSpecifier != CStorageClass.UNSPECIFIED)
 		{
 			printWriter.print(Char.SPACE);
 		}

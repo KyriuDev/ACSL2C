@@ -15,6 +15,7 @@ import org.eclipse.cdt.core.dom.ast.IASTUnaryExpression;
 public enum CUnaryOperator
 {
 	ADDRESS("&", "addr", IASTUnaryExpression.op_amper, true),
+	BRACKETS("()", null, IASTUnaryExpression.op_bracketedPrimary, true),
 	COMPLEMENT("~", "compl", IASTUnaryExpression.op_tilde, true),
 	INDIRECTION("*", "indi", IASTUnaryExpression.op_star, true),
 	MINUS("-", "neg", IASTUnaryExpression.op_minus, true),
@@ -126,6 +127,11 @@ public enum CUnaryOperator
 			case IASTUnaryExpression.op_tilde:
 			{
 				return CUnaryOperator.COMPLEMENT;
+			}
+
+			case IASTUnaryExpression.op_bracketedPrimary:
+			{
+				return CUnaryOperator.BRACKETS;
 			}
 
 			case IASTUnaryExpression.op_throw:

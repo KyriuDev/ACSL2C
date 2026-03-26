@@ -179,5 +179,25 @@ public abstract class AbstractSyntaxNode
 		this.removeAllParents();
 	}
 
+	public boolean hasSuccessorOfType(final Class<? extends AbstractSyntaxNode> type)
+	{
+		if (type.isInstance(this))
+		{
+			return true;
+		}
+
+		for (final AbstractSyntaxNode child : this.getChildren())
+		{
+			boolean hasSuccessorOfType = child.hasSuccessorOfType(type);
+
+			if (hasSuccessorOfType)
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 	//Private methods
 }
