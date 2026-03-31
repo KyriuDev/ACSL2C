@@ -34,6 +34,13 @@ public enum CStorageClass
 		this.eclipseCDTIntValue = eclipseCDTIntValue;
 	}
 
+	//Overrides
+	@Override
+	public String toString()
+	{
+		return this.storageClass;
+	}
+
 	//Public methods
 
 	public String getStorageClass()

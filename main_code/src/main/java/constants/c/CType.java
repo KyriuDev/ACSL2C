@@ -33,7 +33,7 @@ public enum CType
 	LONG("long", -1),
 	SHORT("short", -1),
 	TYPE_OF("typeof", IASTSimpleDeclSpecifier.t_typeof),
-	UNSPECIFIED("caca", IASTSimpleDeclSpecifier.t_unspecified),
+	UNSPECIFIED("unspecified", IASTSimpleDeclSpecifier.t_unspecified),
 	VOID("void", IASTSimpleDeclSpecifier.t_void),
 	W_CHAR_T("w_char_t", IASTSimpleDeclSpecifier.t_wchar_t),
 	;
@@ -48,6 +48,14 @@ public enum CType
 	{
 		this.type = type;
 		this.eclipseCDTIntValue = eclipseCDTIntValue;
+	}
+
+	//Overrides
+
+	@Override
+	public String toString()
+	{
+		return this.type;
 	}
 
 	//Public functions

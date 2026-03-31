@@ -27,6 +27,14 @@ public enum CTypeQualifier
 		this.typeQualifier = typeQualifier;
 	}
 
+	//Overrides
+
+	@Override
+	public String toString()
+	{
+		return this.typeQualifier;
+	}
+
 	//Public methods
 
 	public String getTypeQualifier()

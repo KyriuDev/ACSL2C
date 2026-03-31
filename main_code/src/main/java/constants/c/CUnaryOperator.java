@@ -46,6 +46,14 @@ public enum CUnaryOperator
 		this.isPrefixOperator = isPrefixOperator;
 	}
 
+	//Overrides
+
+	@Override
+	public String toString()
+	{
+		return this.operator;
+	}
+
 	//Public functions
 
 	public String getOperator()
@@ -66,6 +74,11 @@ public enum CUnaryOperator
 	public boolean isPrefixOperator()
 	{
 		return this.isPrefixOperator;
+	}
+
+	public boolean isSuffixOperator()
+	{
+		return !this.isPrefixOperator;
 	}
 
 	//Static functions

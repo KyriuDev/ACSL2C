@@ -1,5 +1,6 @@
 package ast.c;
 
+import ast.AbstractSyntaxNode;
 import constants.c.CUnaryOperator;
 
 /**
@@ -22,6 +23,63 @@ public class UnaryExpressionNode extends CBaseNode
 	}
 
 	//Overrides
+
+	@Override
+	public boolean collapse()
+	{
+		if (true)
+		{
+			return false;
+		}
+
+		boolean collapsed = false;
+
+		if (this.operator == CUnaryOperator.SIZEOF)
+		{
+			AbstractSyntaxNode childToRemove = null;
+
+			for (final AbstractSyntaxNode child : this.getChildren())
+			{
+				if (child.hasSuccessorOfType(UnaryExpressionNode.class))
+				{
+					if (((UnaryExpressionNode) child).getOperator() == CUnaryOperator.BRACKETS)
+					{
+						/*
+							As the "sizeof" operator is actually a unary operator and not a function, parenthesis are
+							not required around it, although it is the best practice to use them.
+							Thus, Eclipse-CDT adds a (in my humble opinion) useless child UnaryExpressionNode
+							representing brackets, which is thus removed by this function.
+						*/
+						collapsed = true;
+
+						if (childToRemove != null)
+						{
+							throw new RuntimeException(
+								"There should not be multiple UnaryExpressionNode of type \"()\" as children of " +
+								"the \"sizeof\" operator!"
+							);
+						}
+
+						childToRemove = child;
+					}
+				}
+			}
+
+			if (childToRemove != null)
+			{
+				this.removeChildAndForceParent(childToRemove);
+
+				for (AbstractSyntaxNode childToRemoveChild : childToRemove.getChildren())
+				{
+					this.addChildAndForceParent(childToRemoveChild);
+				}
+
+				childToRemove.removeAllChildrenAndForceParent();
+			}
+		}
+
+		return collapsed;
+	}
 
 	@Override
 	public String getNodeHeader()

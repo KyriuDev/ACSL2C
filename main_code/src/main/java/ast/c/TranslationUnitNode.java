@@ -19,23 +19,4 @@ public class TranslationUnitNode extends CBaseNode
 	{
 		return "- Translation unit has ";
 	}
-
-	@Override
-	public boolean collapse()
-	{
-		boolean collapsed = false;
-
-		for (final AbstractSyntaxNode child : this.getChildren())
-		{
-			if (child.hasSuccessorOfType(FunctionDeclaratorNode.class))
-			{
-				/*
-					This is purely personal taste, but I like to differentiate clearly between function declaration and
-					function definition, thus we replace this child by a FunctionDeclaratorNode.
-			 	*/
-			}
-		}
-
-		return collapsed;
-	}
 }

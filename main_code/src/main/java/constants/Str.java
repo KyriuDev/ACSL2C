@@ -17,4 +17,7 @@ public class Str
 
 	public static final String COMA_AND_SPACE = ", ";
 	public static final String EMPTY_STRING = "";
+	public static final String SEMI_COLON_AND_SPACE = "; ";
+	public static final String SPACE_AND_LEFT_CURVY_BRACKET = " {";
+	public static final String SPACE_AND_OPENING_BRACKET = " (";
 }

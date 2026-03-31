@@ -25,6 +25,16 @@ public class CFactory
 
 	//Public methods
 
+	public static ArrayDeclaratorNode createArrayDeclaratorNode()
+	{
+		return new ArrayDeclaratorNode();
+	}
+
+	public static ArrayModifierNode createArrayModifierNode()
+	{
+		return new ArrayModifierNode();
+	}
+
 	public static ArraySubscriptExpressionNode createArraySubscriptExpressionNode()
 	{
 		return new ArraySubscriptExpressionNode();
@@ -48,6 +58,11 @@ public class CFactory
 	public static DeclaratorNode createDeclaratorNode()
 	{
 		return new DeclaratorNode();
+	}
+
+	public static EqualsInitializerNode createEqualsInitializerNode()
+	{
+		return new EqualsInitializerNode();
 	}
 
 	public static ExpressionStatementNode createExpressionStatementNode()
@@ -93,6 +108,11 @@ public class CFactory
 	public static NameNode createNameNode(final String value)
 	{
 		return new NameNode(value);
+	}
+
+	public static NullStatementNode createNullStatementNode()
+	{
+		return new NullStatementNode();
 	}
 
 	public static ParameterDeclarationNode createParameterDeclarationNode()

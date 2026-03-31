@@ -1,6 +1,7 @@
 package main;
 
 import ast.AbstractSyntaxTree;
+import ast.c.CBaseNode;
 import ast.c.EclipseCDT2Internal;
 import constants.CommandLineOption;
 import constants.c.CProgram;
@@ -50,7 +51,7 @@ public class Main
 			}
 
 			final CASTTranslationUnit translationUnit = (CASTTranslationUnit) CParser.parse();
-			final AbstractSyntaxTree cProgramTree = EclipseCDT2Internal.translate(translationUnit);
+			System.out.println(Arrays.toString(translationUnit.getMacroDefinitions()));
 
 			System.out.println("----------------- LINEAR PROGRAM -------------------\n");
 
@@ -61,6 +62,7 @@ public class Main
 			final RecursiveVisitor recursiveVisitor = new RecursiveVisitor(translationUnit);
 			recursiveVisitor.printAST();
 
+			final AbstractSyntaxTree cProgramTree = EclipseCDT2Internal.translate(translationUnit);
 			System.out.println("C program internal tree:\n\n" + cProgramTree.toString());
 
 			System.out.println("\n----------------- COMMENTS HANDLING -------------------\n");
@@ -77,7 +79,13 @@ public class Main
 
 			System.out.println("\n----------------- WRITING TO FILE -------------------\n");
 
-			final Writer writer = new Writer(translationUnit, commandLineParser, commentsHandler);
+			final Writer writer = new Writer(
+				(CBaseNode) cProgramTree.getRoot(),
+				translationUnit.getIncludeDirectives(),
+				translationUnit.getMacroDefinitions(),
+				commandLineParser,
+				commentsHandler
+			);
 			writer.writeToFile();
 		}
 		else

@@ -1,8 +1,5 @@
 package ast.c;
 
-import ast.AbstractSyntaxNode;
-import misc.Utils;
-
 /**
  * Name:        ArraySubscriptExpressionNode.java
  * Content:     This class is the internal representation of the Eclipse-CDT "CASTArraySubscriptExpression" class.

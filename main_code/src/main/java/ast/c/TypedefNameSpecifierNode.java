@@ -33,7 +33,7 @@ public class TypedefNameSpecifierNode extends IDeclarationSpecifierNode
 	public String getNodeHeader()
 	{
 		return String.format(
-			"- Simple declaration specifier \"%s %s\" has ",
+			"- Typedef name specifier \"%s %s\" has ",
 			super.getNodeHeader(),
 			this.typeName
 		);

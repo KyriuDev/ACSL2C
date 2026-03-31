@@ -64,14 +64,7 @@ public class Utils
 	 */
 	public static String addLeadingTabulations(final int nbTabulations)
 	{
-		final StringBuilder builder = new StringBuilder();
-
-		for (int i = 0; i < nbTabulations; i++)
-		{
-			builder.append("	");
-		}
-
-		return builder.toString();
+		return "	".repeat(Math.max(0, nbTabulations));
 	}
 
 	/**

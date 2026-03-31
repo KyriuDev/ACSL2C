@@ -48,6 +48,16 @@ public abstract class AbstractSyntaxNode
 		return Collections.unmodifiableList(this.children);
 	}
 
+	public AbstractSyntaxNode getFirstChild()
+	{
+		return this.children.isEmpty() ? null : this.children.get(0);
+	}
+
+	public AbstractSyntaxNode getLastChild()
+	{
+		return this.children.isEmpty() ? null : this.children.get(this.children.size() - 1);
+	}
+
 	/**
 	 * This method returns the parent nodes of the current node in a read-only mode, forcing classical add/remove
 	 * methods to be used to modify the collection.
@@ -136,6 +146,34 @@ public abstract class AbstractSyntaxNode
 	{
 		this.removeChild(child);
 		child.removeParent(this);
+	}
+
+	public AbstractSyntaxNode removeChildAtIndexAndForceParent(final int index)
+	{
+		if (index < 0
+			|| index >= this.children.size())
+		{
+			throw new IndexOutOfBoundsException(String.format(
+				"Index should be between 0 and %d, got %d.",
+				this.children.size() - 1,
+				index
+			));
+		}
+
+		final AbstractSyntaxNode childToRemove = this.children.remove(index);
+		childToRemove.removeParent(this);
+
+		return childToRemove;
+	}
+
+	public AbstractSyntaxNode removeFirstChildAndForceParent()
+	{
+		return this.removeChildAtIndexAndForceParent(0);
+	}
+
+	public AbstractSyntaxNode removeLastChildAndForceParent()
+	{
+		return this.removeChildAtIndexAndForceParent(this.children.size() - 1);
 	}
 
 	public void removeParent(final AbstractSyntaxNode parent)

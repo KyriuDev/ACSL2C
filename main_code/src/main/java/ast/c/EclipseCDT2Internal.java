@@ -64,7 +64,15 @@ public class EclipseCDT2Internal
 		{
 			final CBaseNode correspondingInternalNode;
 
-			if (iastNode instanceof CASTArraySubscriptExpression)
+			if (iastNode instanceof CASTArrayDeclarator)
+			{
+				correspondingInternalNode = CFactory.createArrayDeclaratorNode();
+			}
+			else if (iastNode instanceof CASTArrayModifier)
+			{
+				correspondingInternalNode = CFactory.createArrayModifierNode();
+			}
+			else if (iastNode instanceof CASTArraySubscriptExpression)
 			{
 				correspondingInternalNode = CFactory.createArraySubscriptExpressionNode();
 			}
@@ -165,9 +173,17 @@ public class EclipseCDT2Internal
 					((CASTUnaryExpression) iastNode).getOperator()
 				);
 			}
+			else if (iastNode instanceof CASTNullStatement)
+			{
+				correspondingInternalNode = CFactory.createNullStatementNode();
+			}
+			else if (iastNode instanceof CASTEqualsInitializer)
+			{
+				correspondingInternalNode = CFactory.createEqualsInitializerNode();
+			}
 			else
 			{
-				throw new UnsupportedOperationException(String.format("Node %s type is unknown!", iastNode.toString()));
+				throw new UnsupportedOperationException(String.format("Node type \"%s\" is unknown!", iastNode.toString()));
 			}
 
 			internalNode.addChildAndForceParent(correspondingInternalNode);

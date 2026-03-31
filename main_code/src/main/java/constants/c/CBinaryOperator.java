@@ -67,6 +67,14 @@ public enum CBinaryOperator
 		this.eclipseCDTIntValue = eclipseCDTIntValue;
 	}
 
+	//Overrides
+
+	@Override
+	public String toString()
+	{
+		return this.operator;
+	}
+
 	//Public functions
 
 	public String getOperator()

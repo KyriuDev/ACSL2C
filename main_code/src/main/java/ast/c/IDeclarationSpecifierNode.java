@@ -110,4 +110,15 @@ public abstract class IDeclarationSpecifierNode extends CBaseNode
 	{
 		return this.typeQualifiers.contains(CTypeQualifier.VOLATILE);
 	}
+
+	/**
+	 * This method is used to sort the qualifiers in a specific order, if the default order does not suit the needs
+	 * of the user.
+	 * It can safely either be overridden, implemented with a comparator, or manually implemented.
+	 * By default, the elements are not (re)sorted.
+	 */
+	public void sortQualifiers()
+	{
+
+	}
 }

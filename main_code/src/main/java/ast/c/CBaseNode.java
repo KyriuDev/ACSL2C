@@ -1,7 +1,12 @@
 package ast.c;
 
 import ast.AbstractSyntaxNode;
+import dto.CComment;
 import misc.Utils;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Name:        CBaseNode.java
@@ -24,11 +29,14 @@ import misc.Utils;
 
 public abstract class CBaseNode extends AbstractSyntaxNode
 {
+	//This list is the list of comments associated to the given node
+	private final List<CComment> associatedComments;
+
 	//Constructors
 
 	public CBaseNode()
 	{
-
+		this.associatedComments = new ArrayList<>();
 	}
 
 	//Abstract methods
@@ -100,5 +108,22 @@ public abstract class CBaseNode extends AbstractSyntaxNode
 		}
 
 		return collapsed;
+	}
+
+	//Public methods
+
+	public void addComment(final CComment comment)
+	{
+		this.associatedComments.add(comment);
+	}
+
+	public void removeComment(final CComment comment)
+	{
+		this.associatedComments.remove(comment);
+	}
+
+	public List<CComment> getAssociatedComments()
+	{
+		return Collections.unmodifiableList(this.associatedComments);
 	}
 }
