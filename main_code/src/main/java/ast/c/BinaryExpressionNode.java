@@ -1,8 +1,6 @@
 package ast.c;
 
-import ast.AbstractSyntaxNode;
 import constants.c.CBinaryOperator;
-import misc.Utils;
 
 /**
  * Name:        BinaryExpressionNode.java

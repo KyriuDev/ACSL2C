@@ -1,7 +1,6 @@
 package ast.c;
 
 import ast.AbstractSyntaxNode;
-import misc.Utils;
 
 /**
  * Name:        DeclaratorNode.java
@@ -19,5 +18,24 @@ public class DeclaratorNode extends CBaseNode
 	public String getNodeHeader()
 	{
 		return "- Declarator has ";
+	}
+
+	@Override
+	public boolean collapse()
+	{
+		final AbstractSyntaxNode firstChild = this.getFirstChild();
+
+		if (firstChild instanceof NameNode
+			&& ((NameNode) firstChild).getValue().isEmpty())
+		{
+			/*
+				The name node contains an empty name, thus nothing will be dumped.
+				Removing it now may avoid some undesired spaces in the dumped file.
+			 */
+			this.removeChildAndForceParent(firstChild);
+			return true;
+		}
+
+		return false;
 	}
 }

@@ -16,16 +16,16 @@ public class Char
 	}
 
 	public static final char CARRIAGE_RETURN = '\r';
+	public static final char CLOSING_BRACKET = ')';
+	public static final char CLOSING_CURVY_BRACKET = '}';
+	public static final char CLOSING_SQUARE_BRACKET = ']';
 	public static final char COLON = ':';
 	public static final char COMA = ',';
 	public static final char DASH = '-';
-	public static final char LEFT_BRACKET = '(';
-	public static final char LEFT_CURVY_BRACKET = '{';
-	public static final char LEFT_SQUARE_BRACKET = '[';
 	public static final char LINE_FEED = '\n';
-	public static final char RIGHT_BRACKET = ')';
-	public static final char RIGHT_CURVY_BRACKET = '}';
-	public static final char RIGHT_SQUARE_BRACKET = ']';
+	public static final char OPENING_BRACKET = '(';
+	public static final char OPENING_CURVY_BRACKET = '{';
+	public static final char OPENING_SQUARE_BRACKET = '[';
 	public static final char SEMI_COLON = ';';
 	public static final char SPACE = ' ';
 }

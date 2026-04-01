@@ -16,6 +16,7 @@ import parsing.CommentsHandler;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.PipedReader;
 import java.io.PrintWriter;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -42,6 +43,9 @@ public class Writer
 	private final IASTPreprocessorMacroDefinition[] macroDefinitions;
 	private final CommandLineParser commandLineParser;
 	private final CommentsHandler commentsHandler;
+	private final List<CComment> trailingComments;
+	//Boolean value for controlling the necessity of inserting a line jump, avoids multiple consecutive line jumps
+	private boolean lineAlreadyJumped;
 
 	//Constructors
 
@@ -55,7 +59,8 @@ public class Writer
 			eclipseCdtAstRootNode.getIncludeDirectives(),
 			eclipseCdtAstRootNode.getMacroDefinitions(),
 			commandLineParser,
-			commentsHandler
+			commentsHandler,
+			null
 		);
 	}
 
@@ -63,7 +68,7 @@ public class Writer
 				  final IASTPreprocessorIncludeStatement[] includeStatements,
 				  final IASTPreprocessorMacroDefinition[] macroDefinitions,
 	              final CommandLineParser commandLineParser,
-	              final CommentsHandler commentsHandler)
+	              final List<CComment> trailingComments)
 	{
 		this(
 			null,
@@ -71,7 +76,8 @@ public class Writer
 			includeStatements,
 			macroDefinitions,
 			commandLineParser,
-			commentsHandler
+			null,
+			trailingComments
 		);
 	}
 
@@ -80,7 +86,8 @@ public class Writer
 	               final IASTPreprocessorIncludeStatement[] includeStatements,
 	               final IASTPreprocessorMacroDefinition[] macroDefinitions,
 	               final CommandLineParser commandLineParser,
-	               final CommentsHandler commentsHandler)
+	               final CommentsHandler commentsHandler,
+				   final List<CComment> trailingComments)
 	{
 		this.eclipseCdtAstRootNode = eclipseCdtAstRootNode;
 		this.internalAstRootNode = internalAstRootNode;
@@ -88,6 +95,8 @@ public class Writer
 		this.macroDefinitions = macroDefinitions;
 		this.commandLineParser = commandLineParser;
 		this.commentsHandler = commentsHandler;
+		this.trailingComments = trailingComments;
+		this.lineAlreadyJumped = false;
 	}
 
 	//Public methods
@@ -134,15 +143,13 @@ public class Writer
 	 */
 	private void dumpFile(final PrintWriter printWriter) throws UnhandledElementException
 	{
-		//First, we write the eventual leading comments of the program
-		this.dumpLeadingComments(printWriter);
-
 		//Then, we write the eventual include directives
 		if (this.includeDirectives.length != 0)
 		{
 			if (ADD_INSIGHTFUL_COMMENTS)
 			{
 				printWriter.println("//Include directives");
+				printWriter.println();
 			}
 
 			for (final IASTPreprocessorIncludeStatement includeDirective : this.includeDirectives)
@@ -159,6 +166,7 @@ public class Writer
 			if (ADD_INSIGHTFUL_COMMENTS)
 			{
 				printWriter.println("//Macro definitions");
+				printWriter.println();
 			}
 
 			for (final IASTPreprocessorMacroDefinition macroDefinition : this.macroDefinitions)
@@ -171,6 +179,9 @@ public class Writer
 
 		if (GENERATE_FROM_ECLIPSE_CDT_TREE)
 		{
+			//First, we write the eventual leading comments of the program
+			this.dumpLeadingComments(printWriter);
+
 			//Then, we write the program itself
 			boolean first = true;
 
@@ -184,7 +195,7 @@ public class Writer
 				if (iastNode instanceof CASTSimpleDeclaration)
 				{
 					this.dumpSimpleDeclaration(printWriter, (CASTSimpleDeclaration) iastNode, 0);
-					printWriter.print(Char.RIGHT_BRACKET);
+					printWriter.print(Char.CLOSING_BRACKET);
 					printWriter.print(Char.SEMI_COLON);
 
 					final List<CComment> commentsAppearingAfterDefinition = this.commentsHandler.getCommentsFollowingNodes().get(iastNode);
@@ -212,10 +223,10 @@ public class Writer
 				else
 				{
 					throw new UnhandledElementException(
-							String.format(
-									"Object \"%s\" is not yet handled as topmost element of a C program.",
-									iastNode.toString()
-							)
+						String.format(
+							"Object \"%s\" is not yet handled as topmost element of a C program.",
+							iastNode.toString()
+						)
 					);
 				}
 
@@ -272,6 +283,7 @@ public class Writer
 				if (ADD_INSIGHTFUL_COMMENTS)
 				{
 					printWriter.println("//Function declarations");
+					printWriter.println();
 				}
 
 				for (final SimpleDeclarationNode functionDeclaration : functionDeclarations)
@@ -289,6 +301,7 @@ public class Writer
 				if (ADD_INSIGHTFUL_COMMENTS)
 				{
 					printWriter.println("//Global variables");
+					printWriter.println();
 				}
 
 				for (final SimpleDeclarationNode globalVariable : globalVariables)
@@ -306,6 +319,7 @@ public class Writer
 				if (ADD_INSIGHTFUL_COMMENTS)
 				{
 					printWriter.println("//Function definitions");
+					printWriter.println();
 				}
 
 				boolean first = true;
@@ -320,6 +334,15 @@ public class Writer
 					this.dumpFunctionDefinition(printWriter, functionDefinitionNode, 0);
 					first = false;
 				}
+			}
+
+			//Write the trailing comments if any
+			this.trailingComments.sort(Comparator.comparingInt(CComment::getOriginalSourceCodeStartingLine));
+
+			for (final CComment trailingComment : this.trailingComments)
+			{
+				printWriter.println();
+				printWriter.println(trailingComment.getContent());
 			}
 		}
 	}
@@ -368,6 +391,8 @@ public class Writer
 									   final SimpleDeclarationNode simpleDeclaration,
 									   final int nbTabs) throws UnhandledElementException
 	{
+		this.dumpPrecedingCommentsIfAny(printWriter, simpleDeclaration, nbTabs);
+
 		printWriter.print(Utils.addLeadingTabulations(nbTabs));
 		String separator = String.valueOf(Char.SPACE);
 
@@ -381,6 +406,10 @@ public class Writer
 			{
 				this.dumpTypedefNameSpecifier(printWriter, (TypedefNameSpecifierNode) child, 0);
 			}
+			else if (child instanceof ElaboratedTypeSpecifierNode)
+			{
+				this.dumpElaboratedTypeSpecifier(printWriter, (ElaboratedTypeSpecifierNode) child, 0);
+			}
 			else if (child instanceof FunctionDeclaratorNode)
 			{
 				printWriter.print(Char.SPACE);
@@ -390,6 +419,16 @@ public class Writer
 			{
 				printWriter.print(separator);
 				this.dumpDeclarator(printWriter, (DeclaratorNode) child, 0);
+				separator = Str.COMA_AND_SPACE;
+			}
+			else if (child instanceof CompositeTypeSpecifierNode)
+			{
+				this.dumpCompositeTypeSpecifier(printWriter, (CompositeTypeSpecifierNode) child, nbTabs);
+			}
+			else if (child instanceof ArrayDeclaratorNode)
+			{
+				printWriter.print(separator);
+				this.dumpArrayDeclarator(printWriter, (ArrayDeclaratorNode) child, nbTabs);
 				separator = Str.COMA_AND_SPACE;
 			}
 			else
@@ -404,10 +443,59 @@ public class Writer
 		//printWriter.println(Char.SEMI_COLON);
 	}
 
+	private void dumpCompositeTypeSpecifier(final PrintWriter printWriter,
+											final CompositeTypeSpecifierNode compositeTypeSpecifier,
+											final int nbTabs) throws UnhandledElementException
+	{
+		//TODO Personal taste: I add a line break before the definition for readability
+		printWriter.println();
+
+		this.dumpPrecedingCommentsIfAny(printWriter, compositeTypeSpecifier, nbTabs);
+
+		if (compositeTypeSpecifier.getStorageClass() != CStorageClass.UNSPECIFIED)
+		{
+			printWriter.print(compositeTypeSpecifier.getStorageClass().toString());
+			printWriter.print(Char.SPACE);
+		}
+
+		//TODO Check if composite type specifier is necessarily struct or not
+		printWriter.print(CKeyword.STRUCT);
+		printWriter.print(Char.SPACE);
+
+		//Get struct name
+		final NameNode nameNode = (NameNode) compositeTypeSpecifier.removeFirstChildAndForceParent();
+		this.dumpName(printWriter, nameNode, 0);
+		printWriter.print(Str.SPACE_AND_OPENING_CURVY_BRACKET);
+
+		for (final AbstractSyntaxNode child : compositeTypeSpecifier.getChildren())
+		{
+			printWriter.println();
+
+			if (child instanceof SimpleDeclarationNode)
+			{
+				this.dumpSimpleDeclaration(printWriter, (SimpleDeclarationNode) child, nbTabs + 1);
+				printWriter.print(Char.SEMI_COLON);
+			}
+			else
+			{
+				throw new UnhandledElementException(String.format(
+					"Node type \"%s\" is not yet handled as child of a CompositeTypeSpecifier!",
+					child.toString()
+				));
+			}
+		}
+
+		printWriter.println();
+		printWriter.print(Char.CLOSING_CURVY_BRACKET);
+		//printWriter.print(Char.SEMI_COLON); TODO this needs a bit more fine-grained analysis for function-nested structs
+	}
+
 	private void dumpSimpleDeclarationSpecifier(final PrintWriter printWriter,
 												final SimpleDeclSpecifierNode simpleDeclarationSpecifier,
 												final int nbTabs)
 	{
+		this.dumpPrecedingCommentsIfAny(printWriter, simpleDeclarationSpecifier, nbTabs);
+
 		printWriter.print(Utils.addLeadingTabulations(nbTabs));
 
 		//Write first the storage class if any (extern, static, auto, register, ...)
@@ -437,6 +525,8 @@ public class Writer
 										  final TypedefNameSpecifierNode typedefNameSpecifier,
 										  final int nbTabs)
 	{
+		this.dumpPrecedingCommentsIfAny(printWriter, typedefNameSpecifier, nbTabs);
+
 		printWriter.print(Utils.addLeadingTabulations(nbTabs));
 
 		//Write first the storage class if any (extern, static, auto, register, ...)
@@ -466,6 +556,8 @@ public class Writer
 										final FunctionDeclaratorNode functionDeclarator,
 										final int nbTabs) throws UnhandledElementException
 	{
+		this.dumpPrecedingCommentsIfAny(printWriter, functionDeclarator, nbTabs);
+
 		printWriter.print(Utils.addLeadingTabulations(nbTabs));
 
 		String separator = Str.EMPTY_STRING;
@@ -475,13 +567,17 @@ public class Writer
 			if (child instanceof NameNode)
 			{
 				this.dumpName(printWriter, (NameNode) child, 0);
-				printWriter.print(Char.LEFT_BRACKET);
+				printWriter.print(Char.OPENING_BRACKET);
 			}
 			else if (child instanceof ParameterDeclarationNode)
 			{
 				printWriter.print(separator);
 				this.dumpParameterDeclaration(printWriter, (ParameterDeclarationNode) child);
 				separator = Str.COMA_AND_SPACE;
+			}
+			else if (child instanceof PointerNode)
+			{
+				this.dumpPointer(printWriter, (PointerNode) child, 0);
 			}
 			else
 			{
@@ -492,13 +588,15 @@ public class Writer
 			}
 		}
 
-		printWriter.print(Char.RIGHT_BRACKET);
+		printWriter.print(Char.CLOSING_BRACKET);
 	}
 
 	private void dumpName(final PrintWriter printWriter,
 						  final NameNode name,
 						  final int nbTabs)
 	{
+		this.dumpPrecedingCommentsIfAny(printWriter, name, nbTabs);
+
 		printWriter.print(Utils.addLeadingTabulations(nbTabs));
 		printWriter.print(name.getValue());
 	}
@@ -507,6 +605,8 @@ public class Writer
 	                         final PointerNode pointer,
 							 final int nbTabs)
 	{
+		this.dumpPrecedingCommentsIfAny(printWriter, pointer, nbTabs);
+
 		printWriter.print(Utils.addLeadingTabulations(nbTabs));
 		printWriter.print(CUnaryOperator.INDIRECTION);
 	}
@@ -514,6 +614,8 @@ public class Writer
 	private void dumpParameterDeclaration(final PrintWriter printWriter,
 										  final ParameterDeclarationNode parameterDeclaration) throws UnhandledElementException
 	{
+		this.dumpPrecedingCommentsIfAny(printWriter, parameterDeclaration, 0);
+
 		for (final AbstractSyntaxNode child : parameterDeclaration.getChildren())
 		{
 			if (child instanceof SimpleDeclSpecifierNode)
@@ -523,6 +625,10 @@ public class Writer
 			else if (child instanceof TypedefNameSpecifierNode)
 			{
 				this.dumpTypedefNameSpecifier(printWriter, (TypedefNameSpecifierNode) child, 0);
+			}
+			else if (child instanceof ElaboratedTypeSpecifierNode)
+			{
+				this.dumpElaboratedTypeSpecifier(printWriter, (ElaboratedTypeSpecifierNode) child, 0);
 			}
 			else if (child instanceof DeclaratorNode)
 			{
@@ -548,6 +654,8 @@ public class Writer
 									 final ArrayDeclaratorNode arrayDeclarator,
 									 final int nbTabs) throws UnhandledElementException
 	{
+		this.dumpPrecedingCommentsIfAny(printWriter, arrayDeclarator, nbTabs);
+
 		printWriter.print(Utils.addLeadingTabulations(nbTabs));
 
 		for (final AbstractSyntaxNode child : arrayDeclarator.getChildren())
@@ -575,16 +683,37 @@ public class Writer
 	}
 
 	private void dumpArrayModifier(final PrintWriter printWriter,
-								   final ArrayModifierNode arrayModifier)
+								   final ArrayModifierNode arrayModifier) throws UnhandledElementException
 	{
-		printWriter.print(Char.LEFT_SQUARE_BRACKET);
-		printWriter.print(Char.RIGHT_SQUARE_BRACKET);
+		this.dumpPrecedingCommentsIfAny(printWriter, arrayModifier, 0);
+		printWriter.print(Char.OPENING_SQUARE_BRACKET);
+
+		if (arrayModifier.hasChildren())
+		{
+			final AbstractSyntaxNode child = arrayModifier.getFirstChild();
+
+			if (child instanceof BinaryExpressionNode)
+			{
+				this.dumpBinaryExpression(printWriter, (BinaryExpressionNode) child, 0);
+			}
+			else
+			{
+				throw new UnhandledElementException(String.format(
+					"Node type \"%s\" is not yet handled as child of an ArrayModifierNode!",
+					child.toString()
+				));
+			}
+		}
+
+		printWriter.print(Char.CLOSING_SQUARE_BRACKET);
 	}
 
 	private void dumpDeclarator(final PrintWriter printWriter,
 								final DeclaratorNode declarator,
 								final int nbTabs) throws UnhandledElementException
 	{
+		this.dumpPrecedingCommentsIfAny(printWriter, declarator, nbTabs);
+
 		printWriter.print(Utils.addLeadingTabulations(nbTabs));
 
 		for (final AbstractSyntaxNode child : declarator.getChildren())
@@ -614,6 +743,8 @@ public class Writer
 	private void dumpEqualsInitializer(final PrintWriter printWriter,
 									   final EqualsInitializerNode equalsInitializer) throws UnhandledElementException
 	{
+		this.dumpPrecedingCommentsIfAny(printWriter, equalsInitializer, 0);
+
 		printWriter.print(Char.SPACE);
 		printWriter.print(CBinaryOperator.ASSIGNMENT);
 		printWriter.print(Char.SPACE);
@@ -623,6 +754,26 @@ public class Writer
 		if (child instanceof BinaryExpressionNode)
 		{
 			this.dumpBinaryExpression(printWriter, (BinaryExpressionNode) child, 0);
+		}
+		else if (child instanceof LiteralExpressionNode)
+		{
+			this.dumpLiteralExpression(printWriter, (LiteralExpressionNode) child, 0);
+		}
+		else if (child instanceof FunctionCallExpressionNode)
+		{
+			this.dumpFunctionCallExpression(printWriter, (FunctionCallExpressionNode) child, 0);
+		}
+		else if (child instanceof CastExpressionNode)
+		{
+			this.dumpCastExpression(printWriter, (CastExpressionNode) child, 0);
+		}
+		else if (child instanceof UnaryExpressionNode)
+		{
+			this.dumpUnaryExpression(printWriter, (UnaryExpressionNode) child, 0);
+		}
+		else if (child instanceof IdExpressionNode)
+		{
+			this.dumpIdExpression(printWriter, (IdExpressionNode) child, 0);
 		}
 		else
 		{
@@ -637,6 +788,8 @@ public class Writer
 										final FunctionDefinitionNode functionDefinition,
 										final int nbTabs) throws UnhandledElementException
 	{
+		this.dumpPrecedingCommentsIfAny(printWriter, functionDefinition, nbTabs);
+
 		printWriter.print(Utils.addLeadingTabulations(nbTabs));
 
 		for (final AbstractSyntaxNode child : functionDefinition.getChildren())
@@ -644,6 +797,14 @@ public class Writer
 			if (child instanceof SimpleDeclSpecifierNode)
 			{
 				this.dumpSimpleDeclarationSpecifier(printWriter, (SimpleDeclSpecifierNode) child, 0);
+			}
+			else if (child instanceof TypedefNameSpecifierNode)
+			{
+				this.dumpTypedefNameSpecifier(printWriter, (TypedefNameSpecifierNode) child, 0);
+			}
+			else if (child instanceof ElaboratedTypeSpecifierNode)
+			{
+				this.dumpElaboratedTypeSpecifier(printWriter, (ElaboratedTypeSpecifierNode) child, 0);
 			}
 			else if (child instanceof FunctionDeclaratorNode)
 			{
@@ -653,10 +814,10 @@ public class Writer
 			else if (child instanceof CompoundStatementNode)
 			{
 				printWriter.print(Char.SPACE);
-				printWriter.println(Char.LEFT_CURVY_BRACKET);
+				printWriter.println(Char.OPENING_CURVY_BRACKET);
 				this.dumpCompoundStatement(printWriter, (CompoundStatementNode) child, nbTabs + 1);
 				printWriter.println();
-				printWriter.println(Char.RIGHT_CURVY_BRACKET);
+				printWriter.println(Char.CLOSING_CURVY_BRACKET);
 			}
 			else
 			{
@@ -668,10 +829,37 @@ public class Writer
 		}
 	}
 
+	private void dumpElaboratedTypeSpecifier(final PrintWriter printWriter,
+											 final ElaboratedTypeSpecifierNode elaboratedTypeSpecifier,
+											 final int nbTabs) throws UnhandledElementException
+	{
+		this.dumpPrecedingCommentsIfAny(printWriter, elaboratedTypeSpecifier, nbTabs);
+
+		printWriter.print(Utils.addLeadingTabulations(nbTabs));
+		printWriter.print(elaboratedTypeSpecifier.getTypeSpecifier().toString());
+		printWriter.print(Char.SPACE);
+
+		final AbstractSyntaxNode child = elaboratedTypeSpecifier.getFirstChild();
+
+		if (child instanceof NameNode)
+		{
+			this.dumpName(printWriter, (NameNode) child, 0);
+		}
+		else
+		{
+			throw new UnhandledElementException(String.format(
+				"Node type \"%s\" is not yet handled as child of an ElaboratedTypeSpecifierNode!",
+				child.toString()
+			));
+		}
+	}
+
 	private void dumpCompoundStatement(final PrintWriter printWriter,
 									   final CompoundStatementNode compoundStatement,
 									   final int nbTabs) throws UnhandledElementException
 	{
+		this.dumpPrecedingCommentsIfAny(printWriter, compoundStatement, nbTabs);
+
 		boolean first = true;
 
 		for (final AbstractSyntaxNode child : compoundStatement.getChildren())
@@ -701,7 +889,19 @@ public class Writer
 			}
 			else if (child instanceof ReturnStatementNode)
 			{
-				this.dumpReturnStatement(printWriter, (ReturnStatementNode) child, nbTabs);
+				this.dumpReturnStatement(printWriter, (ReturnStatementNode) child, nbTabs, true);
+			}
+			else if (child instanceof LabelStatementNode)
+			{
+				this.dumpLabelStatement(printWriter, (LabelStatementNode) child, nbTabs - 1);
+			}
+			else if (child instanceof GotoStatementNode)
+			{
+				this.dumpGotoStatement(printWriter, (GotoStatementNode) child, nbTabs);
+			}
+			else if (child instanceof WhileStatementNode)
+			{
+				this.dumpWhileStatement(printWriter, (WhileStatementNode) child, nbTabs);
 			}
 			else
 			{
@@ -715,27 +915,173 @@ public class Writer
 		}
 	}
 
-	private void dumpReturnStatement(final PrintWriter printWriter,
-									 final ReturnStatementNode returnStatement,
-									 final int nbTabs) throws UnhandledElementException
+	private void dumpWhileStatement(final PrintWriter printWriter,
+									final WhileStatementNode whileStatement,
+									final int nbTabs) throws UnhandledElementException
 	{
-		printWriter.println();
+		this.dumpPrecedingCommentsIfAny(printWriter, whileStatement, nbTabs);
+
 		printWriter.print(Utils.addLeadingTabulations(nbTabs));
-		printWriter.print(CKeyword.RETURN);
-		printWriter.print(Char.SPACE);
+		printWriter.print(CKeyword.WHILE);
+		printWriter.print(Str.SPACE_AND_OPENING_BRACKET);
 
-		final AbstractSyntaxNode child = returnStatement.getFirstChild();
+		//Manage "while" condition
+		final AbstractSyntaxNode whileCondition = whileStatement.removeFirstChildAndForceParent();
 
-		if (child instanceof LiteralExpressionNode)
+		if (whileCondition instanceof BinaryExpressionNode)
 		{
-			this.dumpLiteralExpression(printWriter, (LiteralExpressionNode) child, 0);
+			this.dumpBinaryExpression(printWriter, (BinaryExpressionNode) whileCondition, 0);
 		}
 		else
 		{
 			throw new UnhandledElementException(String.format(
-				"Node type \"%s\" is not yet handled as child of a ReturnStatement!",
+				"Node type \"%s\" is not yet handled as condition of a WhileStatementNode!",
+				whileCondition.toString()
+			));
+		}
+
+		printWriter.print(Char.CLOSING_BRACKET);
+		printWriter.println(Str.SPACE_AND_OPENING_CURVY_BRACKET);
+
+		//Manage "while" body
+		final AbstractSyntaxNode whileBody = whileStatement.getFirstChild();
+
+		if (whileBody instanceof CompoundStatementNode)
+		{
+			this.dumpCompoundStatement(printWriter, (CompoundStatementNode) whileBody, nbTabs + 1);
+		}
+		else
+		{
+			throw new UnhandledElementException(String.format(
+				"Node type \"%s\" is not yet handled as body of a WhileStatementNode!",
+				whileBody.toString()
+			));
+		}
+
+		printWriter.println();
+		printWriter.print(Utils.addLeadingTabulations(nbTabs));
+		printWriter.print(Char.CLOSING_CURVY_BRACKET);
+	}
+
+	private void dumpGotoStatement(final PrintWriter printWriter,
+								   final GotoStatementNode gotoStatement,
+								   final int nbTabs) throws UnhandledElementException
+	{
+		this.dumpPrecedingCommentsIfAny(printWriter, gotoStatement, nbTabs);
+
+		printWriter.print(Utils.addLeadingTabulations(nbTabs));
+		printWriter.print(CKeyword.GO_TO);
+		printWriter.print(Char.SPACE);
+
+		final AbstractSyntaxNode child = gotoStatement.getFirstChild();
+
+		if (child instanceof NameNode)
+		{
+			this.dumpName(printWriter, (NameNode) child, 0);
+		}
+		else
+		{
+			throw new UnhandledElementException(String.format(
+				"Node type \"%s\" is not yet handled as child of a GotoStatementNode!",
 				child.toString()
 			));
+		}
+
+		printWriter.print(Char.SEMI_COLON);
+	}
+
+	private void dumpLabelStatement(final PrintWriter printWriter,
+									final LabelStatementNode labelStatement,
+									final int nbTabs) throws UnhandledElementException
+	{
+		this.dumpPrecedingCommentsIfAny(printWriter, labelStatement, nbTabs);
+
+		printWriter.print(Utils.addLeadingTabulations(nbTabs));
+
+		//Manage label name
+		final AbstractSyntaxNode nameNode = labelStatement.removeFirstChildAndForceParent();
+
+		if (nameNode instanceof NameNode)
+		{
+			this.dumpName(printWriter, (NameNode) nameNode, 0);
+			printWriter.print(Char.COLON);
+			printWriter.print(Str.SPACE_AND_OPENING_CURVY_BRACKET);
+		}
+		else
+		{
+			throw new UnhandledElementException(String.format(
+				"Node type \"%s\" is not yet handled as first child of a LabelStatementNode!",
+				nameNode.toString()
+			));
+		}
+
+		//Manage next instructions
+		for (final AbstractSyntaxNode child : labelStatement.getChildren())
+		{
+			printWriter.println();
+
+			if (child instanceof ExpressionStatementNode)
+			{
+				this.dumpExpressionStatement(printWriter, (ExpressionStatementNode) child, nbTabs + 1);
+			}
+			else if (child instanceof CompoundStatementNode)
+			{
+				this.dumpCompoundStatement(printWriter, (CompoundStatementNode) child, nbTabs + 1);
+			}
+			else
+			{
+				throw new UnhandledElementException(String.format(
+					"Node type \"%s\" is not yet handled as child of a LabelStatementNode!",
+					child.toString()
+				));
+			}
+		}
+
+		printWriter.println();
+		printWriter.print(Utils.addLeadingTabulations(nbTabs));
+		printWriter.print(Char.CLOSING_CURVY_BRACKET);
+	}
+
+	private void dumpReturnStatement(final PrintWriter printWriter,
+									 final ReturnStatementNode returnStatement,
+									 final int nbTabs,
+									 final boolean jumpLine) throws UnhandledElementException
+	{
+		this.dumpPrecedingCommentsIfAny(printWriter, returnStatement, nbTabs);
+
+		if (jumpLine)
+		{
+			printWriter.println();
+		}
+
+		printWriter.print(Utils.addLeadingTabulations(nbTabs));
+		printWriter.print(CKeyword.RETURN);
+
+		if (returnStatement.hasChildren())
+		{
+			printWriter.print(Char.SPACE);
+
+			final AbstractSyntaxNode child = returnStatement.getFirstChild();
+
+			if (child instanceof LiteralExpressionNode)
+			{
+				this.dumpLiteralExpression(printWriter, (LiteralExpressionNode) child, 0);
+			}
+			else if (child instanceof BinaryExpressionNode)
+			{
+				this.dumpBinaryExpression(printWriter, (BinaryExpressionNode) child, 0);
+			}
+			else if (child instanceof IdExpressionNode)
+			{
+				this.dumpIdExpression(printWriter, (IdExpressionNode) child, 0);
+			}
+			else
+			{
+				throw new UnhandledElementException(String.format(
+					"Node type \"%s\" is not yet handled as child of a ReturnStatement!",
+					child.toString()
+				));
+			}
 		}
 
 		printWriter.print(Char.SEMI_COLON);
@@ -745,6 +1091,8 @@ public class Writer
 										 final ExpressionStatementNode expressionStatement,
 										 final int nbTabs) throws UnhandledElementException
 	{
+		this.dumpPrecedingCommentsIfAny(printWriter, expressionStatement, nbTabs);
+
 		printWriter.print(Utils.addLeadingTabulations(nbTabs));
 
 		for (final AbstractSyntaxNode child : expressionStatement.getChildren())
@@ -755,7 +1103,7 @@ public class Writer
 			}
 			else if (child instanceof FunctionCallExpressionNode)
 			{
-				this.dumpFunctionCall(printWriter, (FunctionCallExpressionNode) child, 0);
+				this.dumpFunctionCallExpression(printWriter, (FunctionCallExpressionNode) child, 0);
 			}
 			else
 			{
@@ -802,11 +1150,13 @@ public class Writer
 								  final ForStatementNode forStatement,
 								  final int nbTabs) throws UnhandledElementException
 	{
+		this.dumpPrecedingCommentsIfAny(printWriter, forStatement, nbTabs);
+
 		printWriter.println();
 		printWriter.print(Utils.addLeadingTabulations(nbTabs));
 		printWriter.print(CKeyword.FOR);
 		printWriter.print(Char.SPACE);
-		printWriter.print(Char.LEFT_BRACKET);
+		printWriter.print(Char.OPENING_BRACKET);
 
 		//Remove the body of the for loop to manage it later
 		final AbstractSyntaxNode forBody = forStatement.removeLastChildAndForceParent();
@@ -840,10 +1190,14 @@ public class Writer
 			{
 				this.dumpUnaryExpression(printWriter, (UnaryExpressionNode) child, 0);
 			}
+			else if (child instanceof DeclarationStatementNode)
+			{
+				this.dumpDeclarationStatement(printWriter, (DeclarationStatementNode) child, 0);
+			}
 			else
 			{
 				throw new UnhandledElementException(String.format(
-					"Node type \"%s\" is not yet handled as child of an IfStatementNode!",
+					"Node type \"%s\" is not yet handled in the header of a ForStatementNode!",
 					child.toString()
 				));
 			}
@@ -867,9 +1221,9 @@ public class Writer
 			printWriter.print(Char.SEMI_COLON);
 		}
 
-		printWriter.print(Char.RIGHT_BRACKET);
+		printWriter.print(Char.CLOSING_BRACKET);
 		printWriter.print(Char.SPACE);
-		printWriter.println(Char.LEFT_CURVY_BRACKET);
+		printWriter.println(Char.OPENING_CURVY_BRACKET);
 
 		//Dump the body
 		if (forBody instanceof ExpressionStatementNode)
@@ -892,14 +1246,16 @@ public class Writer
 		//Close the for
 		printWriter.println();
 		printWriter.print(Utils.addLeadingTabulations(nbTabs));
-		printWriter.print(Char.RIGHT_CURVY_BRACKET);
-		//printWriter.println();
+		printWriter.print(Char.CLOSING_CURVY_BRACKET);
+		printWriter.println();
 	}
 
 	private void dumpIfStatement(final PrintWriter printWriter,
 								 final IfStatementNode ifStatement,
 								 final int nbTabs) throws UnhandledElementException
 	{
+		this.dumpPrecedingCommentsIfAny(printWriter, ifStatement, nbTabs);
+
 		printWriter.println();
 		printWriter.print(Utils.addLeadingTabulations(nbTabs));
 		printWriter.print(CKeyword.IF);
@@ -916,6 +1272,14 @@ public class Writer
 		{
 			this.dumpBinaryExpression(printWriter, (BinaryExpressionNode) ifCondition, 0);
 		}
+		else if (ifCondition instanceof UnaryExpressionNode)
+		{
+			this.dumpUnaryExpression(printWriter, (UnaryExpressionNode) ifCondition, 0);
+		}
+		else if (ifCondition instanceof FunctionCallExpressionNode)
+		{
+			this.dumpFunctionCallExpression(printWriter, (FunctionCallExpressionNode) ifCondition, 0);
+		}
 		else
 		{
 			throw new UnhandledElementException(String.format(
@@ -924,8 +1288,8 @@ public class Writer
 			));
 		}
 
-		printWriter.print(Char.RIGHT_BRACKET);
-		printWriter.println(Str.SPACE_AND_LEFT_CURVY_BRACKET);
+		printWriter.print(Char.CLOSING_BRACKET);
+		printWriter.println(Str.SPACE_AND_OPENING_CURVY_BRACKET);
 
 		//Retrieve "if" body and manage it
 		final AbstractSyntaxNode ifBody = ifStatement.removeFirstChildAndForceParent();
@@ -933,6 +1297,22 @@ public class Writer
 		if (ifBody instanceof CompoundStatementNode)
 		{
 			this.dumpCompoundStatement(printWriter, (CompoundStatementNode) ifBody, nbTabs + 1);
+		}
+		else if (ifBody instanceof ExpressionStatementNode)
+		{
+			this.dumpExpressionStatement(printWriter, (ExpressionStatementNode) ifBody, nbTabs + 1);
+		}
+		else if (ifBody instanceof ReturnStatementNode)
+		{
+			this.dumpReturnStatement(printWriter, (ReturnStatementNode) ifBody, nbTabs + 1, false);
+		}
+		else if (ifBody instanceof GotoStatementNode)
+		{
+			this.dumpGotoStatement(printWriter, (GotoStatementNode) ifBody, nbTabs + 1);
+		}
+		else if (ifBody instanceof LabelStatementNode)
+		{
+			this.dumpLabelStatement(printWriter, (LabelStatementNode) ifBody, nbTabs + 1);
 		}
 		else
 		{
@@ -944,7 +1324,7 @@ public class Writer
 
 		printWriter.println();
 		printWriter.print(Utils.addLeadingTabulations(nbTabs));
-		printWriter.print(Char.RIGHT_CURVY_BRACKET);
+		printWriter.print(Char.CLOSING_CURVY_BRACKET);
 
 		//Manage eventual "else if" or "else"
 		for (final AbstractSyntaxNode child : ifStatement.getChildren())
@@ -954,26 +1334,39 @@ public class Writer
 				//This is an "else"
 				printWriter.print(Char.SPACE);
 				printWriter.print(CKeyword.ELSE);
-				printWriter.println(Str.SPACE_AND_LEFT_CURVY_BRACKET);
+				printWriter.println(Str.SPACE_AND_OPENING_CURVY_BRACKET);
 
 				this.dumpCompoundStatement(printWriter, (CompoundStatementNode) child, nbTabs + 1);
 
 				printWriter.println();
 				printWriter.print(Utils.addLeadingTabulations(nbTabs));
-				printWriter.print(Char.RIGHT_CURVY_BRACKET);
+				printWriter.print(Char.CLOSING_CURVY_BRACKET);
+			}
+			else if (child instanceof ExpressionStatementNode)
+			{
+				//This is an "else" too...
+				printWriter.print(Char.SPACE);
+				printWriter.print(CKeyword.ELSE);
+				printWriter.println(Str.SPACE_AND_OPENING_CURVY_BRACKET);
+
+				this.dumpExpressionStatement(printWriter, (ExpressionStatementNode) child, nbTabs + 1);
+
+				printWriter.println();
+				printWriter.print(Utils.addLeadingTabulations(nbTabs));
+				printWriter.print(Char.CLOSING_CURVY_BRACKET);
 			}
 			else if (child instanceof IfStatementNode)
 			{
 				//This is an "else if"
 				printWriter.print(Char.SPACE);
 				printWriter.print(CKeyword.ELSE_IF);
-				printWriter.println(Str.SPACE_AND_LEFT_CURVY_BRACKET);
+				printWriter.println(Str.SPACE_AND_OPENING_CURVY_BRACKET);
 
 				this.dumpIfStatement(printWriter, (IfStatementNode) child, nbTabs + 1);
 
 				printWriter.println();
 				printWriter.print(Utils.addLeadingTabulations(nbTabs));
-				printWriter.print(Char.RIGHT_CURVY_BRACKET);
+				printWriter.print(Char.CLOSING_CURVY_BRACKET);
 			}
 			else
 			{
@@ -984,7 +1377,7 @@ public class Writer
 			}
 		}
 
-		//printWriter.println();
+		printWriter.println();
 		//printWriter.println();
 	}
 
@@ -992,6 +1385,8 @@ public class Writer
 										  final DeclarationStatementNode declarationStatement,
 										  final int nbTabs) throws UnhandledElementException
 	{
+		this.dumpPrecedingCommentsIfAny(printWriter, declarationStatement, nbTabs);
+
 		printWriter.print(Utils.addLeadingTabulations(nbTabs));
 
 		for (final AbstractSyntaxNode child : declarationStatement.getChildren())
@@ -1014,6 +1409,8 @@ public class Writer
 									  final BinaryExpressionNode binaryExpression,
 									  final int nbTabs) throws UnhandledElementException
 	{
+		this.dumpPrecedingCommentsIfAny(printWriter, binaryExpression, nbTabs);
+
 		printWriter.print(Utils.addLeadingTabulations(nbTabs));
 		boolean leftPartHandled = false;
 
@@ -1045,11 +1442,19 @@ public class Writer
 			}
 			else if (child instanceof FunctionCallExpressionNode)
 			{
-				this.dumpFunctionCall(printWriter, (FunctionCallExpressionNode) child, 0);
+				this.dumpFunctionCallExpression(printWriter, (FunctionCallExpressionNode) child, 0);
 			}
 			else if (child instanceof BinaryExpressionNode)
 			{
 				this.dumpBinaryExpression(printWriter, (BinaryExpressionNode) child, 0);
+			}
+			else if (child instanceof FieldReferenceNode)
+			{
+				this.dumpFieldReference(printWriter, (FieldReferenceNode) child, 0);
+			}
+			else if (child instanceof TypeIdExpressionNode)
+			{
+				this.dumpTypeIdExpressionNode(printWriter, (TypeIdExpressionNode) child, 0);
 			}
 			else
 			{
@@ -1063,15 +1468,54 @@ public class Writer
 		}
 	}
 
+	private void dumpFieldReference(final PrintWriter printWriter,
+									final FieldReferenceNode fieldReference,
+									final int nbTabs) throws UnhandledElementException
+	{
+		this.dumpPrecedingCommentsIfAny(printWriter, fieldReference, nbTabs);
+
+		printWriter.print(Utils.addLeadingTabulations(nbTabs));
+
+		boolean leftPartHandled = false;
+
+		for (final AbstractSyntaxNode child : fieldReference.getChildren())
+		{
+			if (leftPartHandled)
+			{
+				printWriter.print(CBinaryOperator.ARROW_FIELD_ACCESS);
+			}
+
+			if (child instanceof IdExpressionNode)
+			{
+				this.dumpIdExpression(printWriter, (IdExpressionNode) child, 0);
+			}
+			else if (child instanceof NameNode)
+			{
+				this.dumpName(printWriter, (NameNode) child, 0);
+			}
+			else
+			{
+				throw new UnhandledElementException(String.format(
+					"Node type \"%s\" is not yet handled as child of a FieldReferenceNode!",
+					child.toString()
+				));
+			}
+
+			leftPartHandled = true;
+		}
+	}
+
 	private void dumpUnaryExpression(final PrintWriter printWriter,
 									 final UnaryExpressionNode unaryExpression,
 									 final int nbTabs) throws UnhandledElementException
 	{
+		this.dumpPrecedingCommentsIfAny(printWriter, unaryExpression, nbTabs);
+
 		printWriter.print(Utils.addLeadingTabulations(nbTabs));
 
 		if (unaryExpression.getOperator() == CUnaryOperator.BRACKETS)
 		{
-			printWriter.print(Char.LEFT_BRACKET);
+			printWriter.print(Char.OPENING_BRACKET);
 		}
 		else if (unaryExpression.getOperator().isPrefixOperator())
 		{
@@ -1096,6 +1540,10 @@ public class Writer
 		{
 			this.dumpIdExpression(printWriter, (IdExpressionNode) unaryExpressionChild, 0);
 		}
+		else if (unaryExpressionChild instanceof CastExpressionNode)
+		{
+			this.dumpCastExpression(printWriter, (CastExpressionNode) unaryExpressionChild, 0);
+		}
 		else
 		{
 			throw new UnhandledElementException(String.format(
@@ -1106,7 +1554,7 @@ public class Writer
 
 		if (unaryExpression.getOperator() == CUnaryOperator.BRACKETS)
 		{
-			printWriter.print(Char.RIGHT_BRACKET);
+			printWriter.print(Char.CLOSING_BRACKET);
 		}
 		else if (unaryExpression.getOperator().isSuffixOperator())
 		{
@@ -1114,16 +1562,94 @@ public class Writer
 		}
 	}
 
-	private void dumpFunctionCall(final PrintWriter printWriter,
-								  final FunctionCallExpressionNode functionCallExpression,
-								  final int nbTabs) throws UnhandledElementException
+	private void dumpCastExpression(final PrintWriter printWriter,
+									final CastExpressionNode castExpressionNode,
+									final int nbTabs) throws UnhandledElementException
 	{
+		this.dumpPrecedingCommentsIfAny(printWriter, castExpressionNode, nbTabs);
+
+		printWriter.print(Utils.addLeadingTabulations(nbTabs));
+		printWriter.print(Char.OPENING_BRACKET);
+		boolean parenthesisNotClosedYet = true;
+
+		for (final AbstractSyntaxNode child : castExpressionNode.getChildren())
+		{
+			if (child instanceof TypeIdNode)
+			{
+				this.dumpTypeId(printWriter, (TypeIdNode) child, 0);
+			}
+			else if (child instanceof FunctionCallExpressionNode)
+			{
+				this.dumpFunctionCallExpression(printWriter, (FunctionCallExpressionNode) child, 0);
+			}
+			else if (child instanceof ArraySubscriptExpressionNode)
+			{
+				this.dumpArraySubscriptExpressionNode(printWriter, (ArraySubscriptExpressionNode) child, 0);
+			}
+			else if (child instanceof IdExpressionNode)
+			{
+				this.dumpIdExpression(printWriter, (IdExpressionNode) child, 0);
+			}
+			else
+			{
+				throw new UnhandledElementException(String.format(
+					"Node type \"%s\" is not yet handled as child of a CastExpressionNode!",
+					child.toString()
+				));
+			}
+
+			if (parenthesisNotClosedYet)
+			{
+				parenthesisNotClosedYet = false;
+				printWriter.print(Str.CLOSING_BRACKET_AND_SPACE);
+			}
+		}
+	}
+
+	private void dumpTypeId(final PrintWriter printWriter,
+							final TypeIdNode typeId,
+							final int nbTabs) throws UnhandledElementException
+	{
+		this.dumpPrecedingCommentsIfAny(printWriter, typeId, nbTabs);
+
+		printWriter.print(Utils.addLeadingTabulations(nbTabs));
+
+		for (final AbstractSyntaxNode child : typeId.getChildren())
+		{
+			if (child instanceof TypedefNameSpecifierNode)
+			{
+				this.dumpTypedefNameSpecifier(printWriter, (TypedefNameSpecifierNode) child, 0);
+			}
+			else if (child instanceof DeclaratorNode)
+			{
+				this.dumpDeclarator(printWriter, (DeclaratorNode) child, 0);
+			}
+			else if (child instanceof ElaboratedTypeSpecifierNode)
+			{
+				this.dumpElaboratedTypeSpecifier(printWriter, (ElaboratedTypeSpecifierNode) child, 0);
+			}
+			else
+			{
+				throw new UnhandledElementException(String.format(
+					"Node type \"%s\" is not yet handled as child of a TypeIdNode!",
+					child.toString()
+				));
+			}
+		}
+	}
+
+	private void dumpFunctionCallExpression(final PrintWriter printWriter,
+	                                        final FunctionCallExpressionNode functionCallExpression,
+	                                        final int nbTabs) throws UnhandledElementException
+	{
+		this.dumpPrecedingCommentsIfAny(printWriter, functionCallExpression, nbTabs);
+
 		printWriter.print(Utils.addLeadingTabulations(nbTabs));
 
 		//Retrieve called function name node
 		final IdExpressionNode functionNameNode = (IdExpressionNode) functionCallExpression.removeFirstChildAndForceParent();
 		this.dumpIdExpression(printWriter, functionNameNode, 0);
-		printWriter.print(Char.LEFT_BRACKET);
+		printWriter.print(Char.OPENING_BRACKET);
 
 		//Manage function arguments
 		String separator = Str.EMPTY_STRING;
@@ -1149,6 +1675,18 @@ public class Writer
 			{
 				this.dumpBinaryExpression(printWriter, (BinaryExpressionNode) child, 0);
 			}
+			else if (child instanceof TypeIdExpressionNode)
+			{
+				this.dumpTypeIdExpressionNode(printWriter, (TypeIdExpressionNode) child, 0);
+			}
+			else if (child instanceof FieldReferenceNode)
+			{
+				this.dumpFieldReference(printWriter, (FieldReferenceNode) child, 0);
+			}
+			else if (child instanceof UnaryExpressionNode)
+			{
+				this.dumpUnaryExpression(printWriter, (UnaryExpressionNode) child, 0);
+			}
 			else
 			{
 				throw new UnhandledElementException(String.format(
@@ -1158,13 +1696,39 @@ public class Writer
 			}
 		}
 
-		printWriter.print(Char.RIGHT_BRACKET);
+		printWriter.print(Char.CLOSING_BRACKET);
+	}
+
+	private void dumpTypeIdExpressionNode(final PrintWriter printWriter,
+										  final TypeIdExpressionNode typeIdExpression,
+										  final int nbTabs) throws UnhandledElementException
+	{
+		this.dumpPrecedingCommentsIfAny(printWriter, typeIdExpression, nbTabs);
+
+		printWriter.print(Utils.addLeadingTabulations(nbTabs));
+
+		for (final AbstractSyntaxNode child : typeIdExpression.getChildren())
+		{
+			if (child instanceof TypeIdNode)
+			{
+				this.dumpTypeId(printWriter, (TypeIdNode) child, 0);
+			}
+			else
+			{
+				throw new UnhandledElementException(String.format(
+					"Node type \"%s\" is not yet handled as child of a TypeIdExpressionNode!",
+					child.toString()
+				));
+			}
+		}
 	}
 
 	private void dumpArraySubscriptExpressionNode(final PrintWriter printWriter,
 												  final ArraySubscriptExpressionNode arraySubscriptExpression,
 												  final int nbTabs) throws UnhandledElementException
 	{
+		this.dumpPrecedingCommentsIfAny(printWriter, arraySubscriptExpression, nbTabs);
+
 		printWriter.print(Utils.addLeadingTabulations(nbTabs));
 		boolean leftPartHandled = false;
 
@@ -1172,7 +1736,7 @@ public class Writer
 		{
 			if (leftPartHandled)
 			{
-				printWriter.print(Char.LEFT_SQUARE_BRACKET);
+				printWriter.print(Char.OPENING_SQUARE_BRACKET);
 			}
 
 			if (child instanceof IdExpressionNode)
@@ -1185,7 +1749,15 @@ public class Writer
 			}
 			else if (child instanceof FunctionCallExpressionNode)
 			{
-				this.dumpFunctionCall(printWriter, (FunctionCallExpressionNode) child, 0);
+				this.dumpFunctionCallExpression(printWriter, (FunctionCallExpressionNode) child, 0);
+			}
+			else if (child instanceof LiteralExpressionNode)
+			{
+				this.dumpLiteralExpression(printWriter, (LiteralExpressionNode) child, 0);
+			}
+			else if (child instanceof BinaryExpressionNode)
+			{
+				this.dumpBinaryExpression(printWriter, (BinaryExpressionNode) child, 0);
 			}
 			else
 			{
@@ -1198,13 +1770,15 @@ public class Writer
 			leftPartHandled = true;
 		}
 
-		printWriter.print(Char.RIGHT_SQUARE_BRACKET);
+		printWriter.print(Char.CLOSING_SQUARE_BRACKET);
 	}
 
 	private void dumpLiteralExpression(final PrintWriter printWriter,
 									   final LiteralExpressionNode literalExpression,
 									   final int nbTabs)
 	{
+		this.dumpPrecedingCommentsIfAny(printWriter, literalExpression, nbTabs);
+
 		printWriter.print(Utils.addLeadingTabulations(nbTabs));
 		printWriter.print(literalExpression.getValue());
 	}
@@ -1213,6 +1787,8 @@ public class Writer
 								  final IdExpressionNode idExpressionNode,
 								  final int nbTabs) throws UnhandledElementException
 	{
+		this.dumpPrecedingCommentsIfAny(printWriter, idExpressionNode, nbTabs);
+
 		printWriter.print(Utils.addLeadingTabulations(nbTabs));
 
 		for (final AbstractSyntaxNode child : idExpressionNode.getChildren())
@@ -1227,6 +1803,31 @@ public class Writer
 					"Node type \"%s\" is not yet handled as child of an IdExpressionNode!",
 					child.toString()
 				));
+			}
+		}
+	}
+
+	/**
+	 * This method dumps the comments preceding the given node to the file, adjusting the position of the comment with
+	 * regards to the number of tabulations of the given file.
+	 * Note that this method is too simplistic at the moment and thus may not place comments properly if they are
+	 * originally located at tricky places (e.g., between "if" and "else if" blocks, etc.), or if they appear
+	 * after the last instruction of a block structure (e.g., function, while, if, for, etc.).
+	 *
+	 * @param printWriter
+	 * @param node
+	 * @param nbTabs
+	 */
+	private void dumpPrecedingCommentsIfAny(final PrintWriter printWriter,
+											final CBaseNode node,
+											final int nbTabs)
+	{
+		if (!node.getPrecedingComments().isEmpty())
+		{
+			for (final CComment comment : node.sortAndGetPrecedingComments())
+			{
+				printWriter.print(Utils.addLeadingTabulations(nbTabs));
+				printWriter.println(comment.getContent().trim());
 			}
 		}
 	}
@@ -1262,9 +1863,9 @@ public class Writer
 			else if (child instanceof CASTFunctionDeclarator)
 			{
 				this.dumpFunctionDeclarator(printWriter, (CASTFunctionDeclarator) child, 0);
-				printWriter.print(Char.RIGHT_BRACKET);
+				printWriter.print(Char.CLOSING_BRACKET);
 				printWriter.print(Char.SPACE);
-				printWriter.println(Char.LEFT_CURVY_BRACKET);
+				printWriter.println(Char.OPENING_CURVY_BRACKET);
 			}
 			else if (child instanceof CASTCompoundStatement)
 			{
@@ -1272,7 +1873,7 @@ public class Writer
 			}
 		}
 
-		printWriter.print(Char.RIGHT_CURVY_BRACKET);
+		printWriter.print(Char.CLOSING_CURVY_BRACKET);
 
 		final List<CComment> commentsAppearingAfterDefinition = this.commentsHandler.getCommentsFollowingNodes().get(definition);
 
@@ -1406,7 +2007,7 @@ public class Writer
 			{
 				printWriter.print(Char.SPACE);
 				this.dumpName(printWriter, (CASTName) child);
-				printWriter.print(Char.LEFT_BRACKET);
+				printWriter.print(Char.OPENING_BRACKET);
 			}
 			else if (child instanceof CASTParameterDeclaration)
 			{
@@ -1603,7 +2204,7 @@ public class Writer
 		printWriter.print(Utils.addLeadingTabulations(nbTabs));
 		printWriter.print(CKeyword.WHILE);
 		printWriter.print(Char.SPACE);
-		printWriter.print(Char.LEFT_BRACKET);
+		printWriter.print(Char.OPENING_BRACKET);
 
 		boolean headerManaged = false;
 		boolean bodyManaged = false;
@@ -1635,9 +2236,9 @@ public class Writer
 					this.dumpIdExpression(printWriter, (CASTIdExpression) child);
 				}
 
-				printWriter.print(Char.RIGHT_BRACKET);
+				printWriter.print(Char.CLOSING_BRACKET);
 				printWriter.print(Char.SPACE);
-				printWriter.println(Char.LEFT_CURVY_BRACKET);
+				printWriter.println(Char.OPENING_CURVY_BRACKET);
 			}
 			else if (child instanceof CASTCompoundStatement)
 			{
@@ -1656,7 +2257,7 @@ public class Writer
 
 				this.dumpCompoundStatement(printWriter, (CASTCompoundStatement) child, nbTabs + 1);
 				printWriter.print(Utils.addLeadingTabulations(nbTabs));
-				printWriter.print(Char.RIGHT_CURVY_BRACKET);
+				printWriter.print(Char.CLOSING_CURVY_BRACKET);
 			}
 			else
 			{
@@ -1913,7 +2514,7 @@ public class Writer
 			}
 			else if (child instanceof CASTFunctionCallExpression)
 			{
-				this.dumpFunctionCall(printWriter, (CASTFunctionCallExpression) child, nbTabs, true);
+				this.dumpFunctionCallExpression(printWriter, (CASTFunctionCallExpression) child, nbTabs, true);
 			}
 			else if (child instanceof CASTBinaryExpression)
 			{
@@ -2127,7 +2728,7 @@ public class Writer
 		{
 			if (child instanceof CASTFunctionCallExpression)
 			{
-				this.dumpFunctionCall(printWriter, (CASTFunctionCallExpression) child, nbTabs, false);
+				this.dumpFunctionCallExpression(printWriter, (CASTFunctionCallExpression) child, nbTabs, false);
 			}
 			else if (child instanceof CASTBinaryExpression)
 			{
@@ -2178,10 +2779,10 @@ public class Writer
 	 * @param indent a boolean value indicating whether the function call expression should be indented or not.
 	 */
 	@Deprecated
-	private void dumpFunctionCall(final PrintWriter printWriter,
-								  final CASTFunctionCallExpression functionCallExpression,
-								  final int nbTabs,
-								  final boolean indent) throws UnhandledElementException
+	private void dumpFunctionCallExpression(final PrintWriter printWriter,
+	                                        final CASTFunctionCallExpression functionCallExpression,
+	                                        final int nbTabs,
+	                                        final boolean indent) throws UnhandledElementException
 	{
 		if (indent)
 		{
@@ -2204,7 +2805,7 @@ public class Writer
 				else
 				{
 					this.dumpIdExpression(printWriter, (CASTIdExpression) child);
-					printWriter.print(Char.LEFT_BRACKET);
+					printWriter.print(Char.OPENING_BRACKET);
 					functionNameHandled = true;
 				}
 			}
@@ -2219,6 +2820,6 @@ public class Writer
 			}
 		}
 
-		printWriter.print(Char.RIGHT_BRACKET);
+		printWriter.print(Char.CLOSING_BRACKET);
 	}
 }

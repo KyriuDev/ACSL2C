@@ -1,12 +1,15 @@
 package ast.c;
 
 import ast.AbstractSyntaxTree;
+import dto.CComment;
 import org.eclipse.cdt.core.dom.ast.IASTNode;
 import org.eclipse.cdt.core.dom.ast.IASTPreprocessorMacroDefinition;
 import org.eclipse.cdt.core.dom.ast.IASTTranslationUnit;
 import org.eclipse.cdt.internal.core.dom.parser.c.*;
 
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Name:        EclipseCDT2Internal.java
@@ -28,7 +31,8 @@ public class EclipseCDT2Internal
 
 	//Public methods
 
-	public static AbstractSyntaxTree translate(final IASTTranslationUnit translationUnit)
+	public static AbstractSyntaxTree translate(final IASTTranslationUnit translationUnit,
+	                                           final Map<IASTNode, List<CComment>> nodeToCommentsMapping)
 	{
 		/*
 			(Temporary) fix for macro expansion that we want to avoid.
@@ -48,7 +52,12 @@ public class EclipseCDT2Internal
 		}
 
 		final AbstractSyntaxTree abstractSyntaxTree = new AbstractSyntaxTree(CFactory.createTranslationUnitNode());
-		EclipseCDT2Internal.translate(translationUnit, (CBaseNode) abstractSyntaxTree.getRoot(), expandedValue2Macro);
+		EclipseCDT2Internal.translate(
+			translationUnit,
+			(CBaseNode) abstractSyntaxTree.getRoot(),
+			expandedValue2Macro,
+			nodeToCommentsMapping
+		);
 		abstractSyntaxTree.collapse();
 		
 		return abstractSyntaxTree;
@@ -56,9 +65,10 @@ public class EclipseCDT2Internal
 
 	//Private methods
 
-	public static void translate(final IASTNode eclipseCdtNode,
-								 final CBaseNode internalNode,
-								 final HashMap<String, String> expandedValue2Macro)
+	private static void translate(final IASTNode eclipseCdtNode,
+	                              final CBaseNode internalNode,
+	                              final HashMap<String, String> expandedValue2Macro,
+	                              final Map<IASTNode, List<CComment>> nodeToCommentsMapping)
 	{
 		for (final IASTNode iastNode : eclipseCdtNode.getChildren())
 		{
@@ -181,13 +191,56 @@ public class EclipseCDT2Internal
 			{
 				correspondingInternalNode = CFactory.createEqualsInitializerNode();
 			}
+			else if (iastNode instanceof CASTCompositeTypeSpecifier)
+			{
+				correspondingInternalNode = CFactory.createCompositeTypeSpecifierNode(((CASTCompositeTypeSpecifier) iastNode).getStorageClass());
+			}
+			else if (iastNode instanceof CASTCastExpression)
+			{
+				correspondingInternalNode = CFactory.createCastExpressionNode();
+			}
+			else if (iastNode instanceof CASTTypeId)
+			{
+				correspondingInternalNode = CFactory.createTypeIdNode();
+			}
+			else if (iastNode instanceof CASTElaboratedTypeSpecifier)
+			{
+				correspondingInternalNode = CFactory.createElaboratedTypeSpecifierNode(
+					((CASTElaboratedTypeSpecifier) iastNode).getKind()
+				);
+			}
+			else if (iastNode instanceof CASTTypeIdExpression)
+			{
+				correspondingInternalNode = CFactory.createTypeIdExpressionNode();
+			}
+			else if (iastNode instanceof CASTFieldReference)
+			{
+				correspondingInternalNode = CFactory.createFieldReferenceNode();
+			}
+			else if (iastNode instanceof CASTLabelStatement)
+			{
+				correspondingInternalNode = CFactory.createLabelStatementNode();
+			}
+			else if (iastNode instanceof CASTGotoStatement)
+			{
+				correspondingInternalNode = CFactory.createGotoStatementNode();
+			}
+			else if (iastNode instanceof CASTWhileStatement)
+			{
+				correspondingInternalNode = CFactory.createWhileStatementNode();
+			}
 			else
 			{
 				throw new UnsupportedOperationException(String.format("Node type \"%s\" is unknown!", iastNode.toString()));
 			}
 
+			if (nodeToCommentsMapping.containsKey(iastNode))
+			{
+				correspondingInternalNode.addComments(nodeToCommentsMapping.get(iastNode));
+			}
+
 			internalNode.addChildAndForceParent(correspondingInternalNode);
-			EclipseCDT2Internal.translate(iastNode, correspondingInternalNode, expandedValue2Macro);
+			EclipseCDT2Internal.translate(iastNode, correspondingInternalNode, expandedValue2Macro, nodeToCommentsMapping);
 		}
 	}
 }

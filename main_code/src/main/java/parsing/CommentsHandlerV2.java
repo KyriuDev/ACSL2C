@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Name:        CommentsHandler.java
+ * Name:        CommentsHandlerV2.java
  * Content:     This class is in charge of handling the comments appearing in the original source code of the given
  * 				program.
  * 				More precisely, it associates each parsed comment to a pair of IASTNode such that the first/left
@@ -25,64 +25,64 @@ import java.util.Map;
  * 				second/right IASTNode of the pair corresponds to the portion of code appearing right after the comment.
  * Author:      Quentin Nivon
  * Email:       quentin.nivon@uol.de
- * Creation:    02/03/26
+ * Creation:    31/03/26
  */
 
-public class CommentsHandler
+public class CommentsHandlerV2
 {
 	private final Map<CComment, Surrounding> commentsSurroundings;
-	private final Map<IASTNode, List<CComment>> commentsFollowingNodes;
+	private final Map<IASTNode, List<CComment>> commentsPrecedingNodes;
 	private final IASTTranslationUnit rootNode;
 
 	//Constructors
 
-	public CommentsHandler(final IASTTranslationUnit rootNode)
+	public CommentsHandlerV2(final IASTTranslationUnit rootNode)
 	{
 		this.rootNode = rootNode;
 		this.commentsSurroundings = new HashMap<>();
-		this.commentsFollowingNodes = new HashMap<>();
+		this.commentsPrecedingNodes = new HashMap<>();
 	}
 
 	//Public methods
 
 	/**
-	 * This method returns the list of comments that appear immediately after a given IASTNode.
+	 * This method returns the list of comments that appear immediately before a given IASTNode.
 	 * It is used to know when a comment should be dumped to the file.
 	 * It somehow reverses and aggregates the information stored in commentsSurroundings.
 	 * If this information is sufficient to properly write the comments back to their exact position in the C program,
 	 * it probably means that the notion of surrounding is too powerful and could probably be replaced by something
 	 * weaker, to lower the overall complexity of calling this class.
 	 *
-	 * @return a map whose keys are IASTNodes, and values are the list of comments that immediately follow these nodes.
+	 * @return a map whose keys are IASTNodes, and values are the list of comments that immediately precede these nodes.
 	 */
-	public Map<IASTNode, List<CComment>> getCommentsFollowingNodes()
+	public Map<IASTNode, List<CComment>> getCommentsPrecedingNodes()
 	{
-		if (this.commentsFollowingNodes.isEmpty()
+		if (this.commentsPrecedingNodes.isEmpty()
 			&& !this.commentsSurroundings.isEmpty())
 		{
 			//Comments following nodes have not been computed yet.
 			for (final CComment comment : this.commentsSurroundings.keySet())
 			{
 				final Surrounding surrounding = this.commentsSurroundings.get(comment);
-				final List<CComment> commentsAfterNode = this.commentsFollowingNodes.computeIfAbsent(
-					surrounding.getClosestPrecedingNode(),
+				final List<CComment> commentsBeforeNode = this.commentsPrecedingNodes.computeIfAbsent(
+					surrounding.getClosestSucceedingNode(),
 					a -> new ArrayList<>()
 				);
-				commentsAfterNode.add(comment);
+				commentsBeforeNode.add(comment);
 			}
 		}
 
-		return this.commentsFollowingNodes;
+		return this.commentsPrecedingNodes;
 	}
 
 	/**
-	 * This method is used to find the leading comments of the C program, if any.
-	 * Such comments are comments that appear at the very beginning of the C program, before anything else, and which
-	 * must thus be written first, before the C program itself.
+	 * This method is used to find the trailing comments of the C program, if any.
+	 * Such comments are comments that appear at the very end of the C program, after everything else, and which
+	 * must thus be written last, after the C program.
 	 *
-	 * @return the list of leading comments, if any, or an empty list otherwise.
+	 * @return the list of trailing comments, if any, or an empty list otherwise.
 	 */
-	public List<CComment> getLeadingComments()
+	public List<CComment> getTrailingComments()
 	{
 		final ArrayList<CComment> list = new ArrayList<>();
 
@@ -91,9 +91,9 @@ public class CommentsHandler
 			final Surrounding surrounding = this.commentsSurroundings.get(comment);
 
 			if (surrounding.getClosestBoundary() instanceof IASTTranslationUnit
-				&& surrounding.getClosestPrecedingNode() == null)
+				&& surrounding.getClosestSucceedingNode() == null)
 			{
-				//The comment is at the topmost level of the C program and does not have any preceding statement
+				//The comment is at the bottommost level of the C program and does not have any following statement
 				list.add(comment);
 			}
 		}

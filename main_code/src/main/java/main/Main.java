@@ -1,5 +1,7 @@
 package main;
 
+import acsl_to_c.ACSL2ASTTranslator;
+import acsl_to_c.Merger;
 import ast.AbstractSyntaxTree;
 import ast.c.CBaseNode;
 import ast.c.EclipseCDT2Internal;
@@ -10,13 +12,13 @@ import org.eclipse.cdt.internal.core.dom.parser.c.CASTTranslationUnit;
 import parsing.ACSLParser;
 import parsing.CommentsHandler;
 import parsing.CParser;
+import parsing.CommentsHandlerV2;
 import visitors.RecursiveVisitor;
 import visitors.Visitors;
 import writing.Writer;
 
 import java.io.File;
 import java.util.Arrays;
-import java.util.Collections;
 
 /**
  *    Name:        Main.java
@@ -62,20 +64,25 @@ public class Main
 			final RecursiveVisitor recursiveVisitor = new RecursiveVisitor(translationUnit);
 			recursiveVisitor.printAST();
 
-			final AbstractSyntaxTree cProgramTree = EclipseCDT2Internal.translate(translationUnit);
-			System.out.println("C program internal tree:\n\n" + cProgramTree.toString());
-
 			System.out.println("\n----------------- COMMENTS HANDLING -------------------\n");
 
-			final CommentsHandler commentsHandler = new CommentsHandler(translationUnit);
+			final CommentsHandlerV2 commentsHandler = new CommentsHandlerV2(translationUnit);
 			commentsHandler.computeCommentsPrecedingAndSucceedingNodes();
 			commentsHandler.displayMapping();
 
-			System.out.println("\n----------------- GENERATING AST FROM JAVA -------------------\n");
+			System.out.println("\n----------------- TRANSLATION TO INTERNAL FORMAT -----------------\n");
+			final AbstractSyntaxTree cProgramTree = EclipseCDT2Internal.translate(translationUnit, commentsHandler.getCommentsPrecedingNodes());
+			System.out.println("C program internal tree:\n\n" + cProgramTree.toString());
 
-			/*final ACSLParser parser = new ACSLParser(Collections.singletonList(commentsHandler.getRandomComment()));
-			parser.parse();*/
+			System.out.println("\n----------------- ACSL CONTRACTS TRANSLATION -----------------\n");
 
+			final ACSL2ASTTranslator translator = new ACSL2ASTTranslator();
+			translator.translate();
+
+			System.out.println("\n----------------- ACSL CONTRACTS AND C PROGRAM FUSION -----------------\n");
+
+			final Merger merger = new Merger(cProgramTree, translator);
+			merger.merge();
 
 			System.out.println("\n----------------- WRITING TO FILE -------------------\n");
 
@@ -84,7 +91,7 @@ public class Main
 				translationUnit.getIncludeDirectives(),
 				translationUnit.getMacroDefinitions(),
 				commandLineParser,
-				commentsHandler
+				commentsHandler.getTrailingComments()
 			);
 			writer.writeToFile();
 		}

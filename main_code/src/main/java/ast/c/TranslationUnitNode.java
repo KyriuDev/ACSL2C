@@ -1,7 +1,5 @@
 package ast.c;
 
-import ast.AbstractSyntaxNode;
-
 /**
  * Name:        TranslationUnitNode.java
  * Content:     This class is the internal representation of the Eclipse-CDT "CASTTranslationUnit" class.

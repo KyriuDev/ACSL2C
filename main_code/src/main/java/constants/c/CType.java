@@ -33,12 +33,13 @@ public enum CType
 	LONG("long", -1),
 	SHORT("short", -1),
 	TYPE_OF("typeof", IASTSimpleDeclSpecifier.t_typeof),
-	UNSPECIFIED("unspecified", IASTSimpleDeclSpecifier.t_unspecified),
+	UNSPECIFIED("", IASTSimpleDeclSpecifier.t_unspecified),
+	USER_DEFINED("", -1),
 	VOID("void", IASTSimpleDeclSpecifier.t_void),
 	W_CHAR_T("w_char_t", IASTSimpleDeclSpecifier.t_wchar_t),
 	;
 
-	private final String type;
+	private String type;
 	private final int eclipseCDTIntValue;
 
 	//Constructors
@@ -68,6 +69,12 @@ public enum CType
 	public int getEclipseCDTIntValue()
 	{
 		return this.eclipseCDTIntValue;
+	}
+
+	public CType setType(final String type)
+	{
+		this.type = type;
+		return this;
 	}
 
 	//Static functions

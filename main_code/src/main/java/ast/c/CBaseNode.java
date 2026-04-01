@@ -4,9 +4,7 @@ import ast.AbstractSyntaxNode;
 import dto.CComment;
 import misc.Utils;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 /**
  * Name:        CBaseNode.java
@@ -29,14 +27,14 @@ import java.util.List;
 
 public abstract class CBaseNode extends AbstractSyntaxNode
 {
-	//This list is the list of comments associated to the given node
-	private final List<CComment> associatedComments;
+	//This list is the list of comments immediately preceding the given node
+	private final List<CComment> precedingComments;
 
 	//Constructors
 
 	public CBaseNode()
 	{
-		this.associatedComments = new ArrayList<>();
+		this.precedingComments = new ArrayList<>();
 	}
 
 	//Abstract methods
@@ -112,18 +110,29 @@ public abstract class CBaseNode extends AbstractSyntaxNode
 
 	//Public methods
 
+	public void addComments(final Collection<CComment> comments)
+	{
+		this.precedingComments.addAll(comments);
+	}
+
 	public void addComment(final CComment comment)
 	{
-		this.associatedComments.add(comment);
+		this.precedingComments.add(comment);
 	}
 
 	public void removeComment(final CComment comment)
 	{
-		this.associatedComments.remove(comment);
+		this.precedingComments.remove(comment);
 	}
 
-	public List<CComment> getAssociatedComments()
+	public List<CComment> getPrecedingComments()
 	{
-		return Collections.unmodifiableList(this.associatedComments);
+		return Collections.unmodifiableList(this.precedingComments);
+	}
+
+	public List<CComment> sortAndGetPrecedingComments()
+	{
+		this.precedingComments.sort(Comparator.comparingInt(CComment::getOriginalSourceCodeStartingLine));
+		return this.getPrecedingComments();
 	}
 }

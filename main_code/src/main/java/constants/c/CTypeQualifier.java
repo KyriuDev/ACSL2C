@@ -4,7 +4,6 @@ package constants.c;
  * Name:        CTypeQualifier.java
  * Content:	    This enum defines the type qualifiers supported by Eclipse-CDT along with their actual (textual)
  * 				representation.
- * 			    and conversely.
  * Author:      Quentin Nivon
  * Email:       quentin.nivon@uol.de
  * Creation:    26/03/26

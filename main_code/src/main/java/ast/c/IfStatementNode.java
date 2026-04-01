@@ -1,5 +1,9 @@
 package ast.c;
 
+import ast.AbstractSyntaxNode;
+
+import java.util.ArrayList;
+
 /**
  * Name:        IfStatementNode.java
  * Content:     This class is the internal representation of the Eclipse-CDT "CASTIfStatement" class.
@@ -33,5 +37,41 @@ public class IfStatementNode extends CBaseNode
 	{
 		//TODO
 		return null;
+	}
+
+	@Override
+	public boolean collapse()
+	{
+		boolean collapsed = false;
+
+		final ArrayList<AbstractSyntaxNode> childrenToRemove = new ArrayList<>();
+
+		for (final AbstractSyntaxNode child : this.getChildren())
+		{
+			if (child instanceof CompoundStatementNode
+				&& child.getChildren().size() == 1)
+			{
+				//A compound statement with a single child is useless => removing it allows for prettier printing.
+				childrenToRemove.add(child);
+				collapsed = true;
+			}
+		}
+
+		for (final AbstractSyntaxNode childToRemove : childrenToRemove)
+		{
+			final int removedChildIndex = this.removeChildAndForceParent(childToRemove);
+			final AbstractSyntaxNode childToRemoveChild = childToRemove.removeFirstChildAndForceParent();
+
+			if (removedChildIndex >= this.getChildren().size())
+			{
+				this.addChildAndForceParent(childToRemoveChild);
+			}
+			else
+			{
+				this.addChildAtIndexAndForceParent(childToRemoveChild, removedChildIndex);
+			}
+		}
+
+		return collapsed;
 	}
 }

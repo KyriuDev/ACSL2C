@@ -17,4 +17,18 @@ public class ArrayModifierNode extends CBaseNode
 	{
 		return "- Array modifier ([]) has ";
 	}
+
+	@Override
+	public String checkWellFormedness()
+	{
+		if (this.getChildren().size() > 1)
+		{
+			return String.format(
+				"ArrayModifierNode is malformed: expected at most 1 child, got %d.",
+				this.getChildren().size()
+			);
+		}
+
+		return null;
+	}
 }

@@ -1,15 +1,14 @@
 package visitors;
 
-import ast.c.IDeclarationSpecifierNode;
+import ast.c.ElaboratedTypeSpecifierNode;
 import constants.*;
-import constants.c.CBinaryOperator;
-import constants.c.CStorageClass;
-import constants.c.CType;
-import constants.c.CUnaryOperator;
+import constants.c.*;
 import exceptions.UnhandledElementException;
 import misc.Utils;
 import org.eclipse.cdt.core.dom.ast.*;
 import org.eclipse.cdt.internal.core.dom.parser.c.*;
+
+import java.util.Arrays;
 
 /**
  * Name:        RecursiveVisitor.java
@@ -252,9 +251,47 @@ public class RecursiveVisitor
 		{
 			return String.format("Literal (%s)", node.toString());
 		}
+		else if (node instanceof CASTCompositeTypeSpecifier)
+		{
+			final CASTCompositeTypeSpecifier compositeTypeSpecifier = (CASTCompositeTypeSpecifier) node;
+			return CStorageClass.convertEclipseCDTTypesToThis(compositeTypeSpecifier.getStorageClass()).toString();
+		}
+		else if (node instanceof CASTCastExpression)
+		{
+			final CASTCastExpression castExpression = (CASTCastExpression) node;
+		}
+		else if (node instanceof CASTElaboratedTypeSpecifier)
+		{
+			final CASTElaboratedTypeSpecifier elaboratedTypeSpecifier = (CASTElaboratedTypeSpecifier) node;
+
+			return CElaboratedTypeSpecifier.convertEclipseCDTElaboratedTypeSpecifierToThis(elaboratedTypeSpecifier.getKind()).toString();
+		}
+		else if (node instanceof CASTTypeId)
+		{
+			final CASTTypeId typeId = (CASTTypeId) node;
+		}
+		else if (node instanceof CASTTypeIdExpression)
+		{
+			final CASTTypeIdExpression typeIdExpression = (CASTTypeIdExpression) node;
+		}
+		else if (node instanceof CASTFieldReference)
+		{
+			final CASTFieldReference fieldReference = (CASTFieldReference) node;
+			return "(->)";
+		}
+		else if (node instanceof CASTLabelStatement)
+		{
+			final CASTLabelStatement labelStatement = (CASTLabelStatement) node;
+			return "(\"goto\" label)";
+		}
+		else if (node instanceof CASTGotoStatement)
+		{
+			final CASTGotoStatement gotoStatement = (CASTGotoStatement) node;
+		}
 		else if ((node instanceof CASTProblemDeclaration)
 				|| (node instanceof CASTProblem))
 		{
+			//Badly parsed element => go red
 			System.out.println(Color.getRedMessage(
 				"Error: The C program is malformed, some of its content could not be read! The generated AST might" +
 				" consequently be erroneous!"
@@ -262,6 +299,7 @@ public class RecursiveVisitor
 		}
 		else
 		{
+			//Non-handled yet element => go yellow
 			System.out.printf(Color.getYellowMessage(
 				"Warning: Node type \"%s\" is not supported yet.%n"), node.toString()
 			);

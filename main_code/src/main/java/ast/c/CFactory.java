@@ -1,9 +1,8 @@
 package ast.c;
 
-import constants.c.CBinaryOperator;
-import constants.c.CStorageClass;
-import constants.c.CType;
-import constants.c.CUnaryOperator;
+import constants.c.*;
+
+import java.awt.*;
 
 /**
  * Name:        CFactory.java
@@ -45,6 +44,21 @@ public class CFactory
 		return new BinaryExpressionNode(CBinaryOperator.convertEclipseCDTBinaryOperatorToThis(binaryOperator));
 	}
 
+	public static CastExpressionNode createCastExpressionNode()
+	{
+		return new CastExpressionNode();
+	}
+
+	public static CompositeTypeSpecifierNode createCompositeTypeSpecifierNode(final int storageClass)
+	{
+		return CFactory.createCompositeTypeSpecifierNode(CStorageClass.convertEclipseCDTTypesToThis(storageClass));
+	}
+
+	public static CompositeTypeSpecifierNode createCompositeTypeSpecifierNode(final CStorageClass storageClass)
+	{
+		return new CompositeTypeSpecifierNode(storageClass);
+	}
+
 	public static CompoundStatementNode createCompoundStatementNode()
 	{
 		return new CompoundStatementNode();
@@ -60,6 +74,11 @@ public class CFactory
 		return new DeclaratorNode();
 	}
 
+	public static ElaboratedTypeSpecifierNode createElaboratedTypeSpecifierNode(final int specifierKind)
+	{
+		return new ElaboratedTypeSpecifierNode(CElaboratedTypeSpecifier.convertEclipseCDTElaboratedTypeSpecifierToThis(specifierKind));
+	}
+
 	public static EqualsInitializerNode createEqualsInitializerNode()
 	{
 		return new EqualsInitializerNode();
@@ -68,6 +87,11 @@ public class CFactory
 	public static ExpressionStatementNode createExpressionStatementNode()
 	{
 		return new ExpressionStatementNode();
+	}
+
+	public static FieldReferenceNode createFieldReferenceNode()
+	{
+		return new FieldReferenceNode();
 	}
 
 	public static ForStatementNode createForStatementNode()
@@ -90,6 +114,11 @@ public class CFactory
 		return new FunctionDefinitionNode();
 	}
 
+	public static GotoStatementNode createGotoStatementNode()
+	{
+		return new GotoStatementNode();
+	}
+
 	public static IdExpressionNode createIdExpressionNode()
 	{
 		return new IdExpressionNode();
@@ -98,6 +127,11 @@ public class CFactory
 	public static IfStatementNode createIfStatementNode()
 	{
 		return new IfStatementNode();
+	}
+
+	public static LabelStatementNode createLabelStatementNode()
+	{
+		return new LabelStatementNode();
 	}
 
 	public static LiteralExpressionNode createLiteralExpressionNode(final String value)
@@ -142,9 +176,26 @@ public class CFactory
 																			   final boolean isRestrict,
 																			   final boolean isVolatile)
 	{
-		return new SimpleDeclSpecifierNode(
+		return CFactory.createSimpleDeclarationSpecifierNode(
 			CStorageClass.convertEclipseCDTTypesToThis(storageClass),
 			CType.convertEclipseCDTTypesToThis(type),
+			isConst,
+			isInline,
+			isRestrict,
+			isVolatile
+		);
+	}
+
+	public static SimpleDeclSpecifierNode createSimpleDeclarationSpecifierNode(final CStorageClass storageClass,
+	                                                                           final CType type,
+	                                                                           final boolean isConst,
+	                                                                           final boolean isInline,
+	                                                                           final boolean isRestrict,
+	                                                                           final boolean isVolatile)
+	{
+		return new SimpleDeclSpecifierNode(
+			storageClass,
+			type,
 			isConst,
 			isInline,
 			isRestrict,
@@ -157,6 +208,16 @@ public class CFactory
 		return new TranslationUnitNode();
 	}
 
+	public static TypeIdNode createTypeIdNode()
+	{
+		return new TypeIdNode();
+	}
+
+	public static TypeIdExpressionNode createTypeIdExpressionNode()
+	{
+		return new TypeIdExpressionNode();
+	}
+
 	public static TypedefNameSpecifierNode createTypedefNameSpecifierNode(final int storageClass,
 																		  final boolean isConst,
 																		  final boolean isInline,
@@ -164,8 +225,25 @@ public class CFactory
 																		  final boolean isVolatile,
 																		  final String typeName)
 	{
-		return new TypedefNameSpecifierNode(
+		return CFactory.createTypedefNameSpecifierNode(
 			CStorageClass.convertEclipseCDTTypesToThis(storageClass),
+			isConst,
+			isInline,
+			isRestrict,
+			isVolatile,
+			typeName
+		);
+	}
+
+	public static TypedefNameSpecifierNode createTypedefNameSpecifierNode(final CStorageClass storageClass,
+	                                                                      final boolean isConst,
+	                                                                      final boolean isInline,
+	                                                                      final boolean isRestrict,
+	                                                                      final boolean isVolatile,
+	                                                                      final String typeName)
+	{
+		return new TypedefNameSpecifierNode(
+			storageClass,
 			isConst,
 			isInline,
 			isRestrict,
@@ -177,5 +255,10 @@ public class CFactory
 	public static UnaryExpressionNode createUnaryExpressionNode(final int operator)
 	{
 		return new UnaryExpressionNode(CUnaryOperator.convertEclipseCDTUnaryOperatorToThis(operator));
+	}
+
+	public static WhileStatementNode createWhileStatementNode()
+	{
+		return new WhileStatementNode();
 	}
 }

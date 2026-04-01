@@ -58,6 +58,11 @@ public abstract class AbstractSyntaxNode
 		return this.children.isEmpty() ? null : this.children.get(this.children.size() - 1);
 	}
 
+	public boolean hasChildren()
+	{
+		return !this.children.isEmpty();
+	}
+
 	/**
 	 * This method returns the parent nodes of the current node in a read-only mode, forcing classical add/remove
 	 * methods to be used to modify the collection.
@@ -137,15 +142,24 @@ public abstract class AbstractSyntaxNode
 		parent.addParent(this);
 	}
 
-	public void removeChild(final AbstractSyntaxNode child)
+	public int removeChild(final AbstractSyntaxNode child)
 	{
-		this.children.remove(child);
+		final int childIndex = this.children.indexOf(child);
+
+		if (childIndex != -1)
+		{
+			this.children.remove(childIndex);
+		}
+
+		return childIndex;
 	}
 
-	public void removeChildAndForceParent(final AbstractSyntaxNode child)
+	public int removeChildAndForceParent(final AbstractSyntaxNode child)
 	{
-		this.removeChild(child);
+		final int removedChildIndex = this.removeChild(child);
 		child.removeParent(this);
+
+		return removedChildIndex;
 	}
 
 	public AbstractSyntaxNode removeChildAtIndexAndForceParent(final int index)
