@@ -251,5 +251,21 @@ public abstract class AbstractSyntaxNode
 		return false;
 	}
 
+	/**
+	 * The copy methods creates a shallow copy of this node, in the sense that only the node itself, along with its
+	 * information, is copied.
+	 *
+	 * @return the copy of the current node
+	 */
+	public abstract AbstractSyntaxNode copy();
+
+	/**
+	 * The copy methods creates a deep copy of this node, in the sense that the node, its information, and all its
+	 * descendent nodes will be copied recursively.
+	 *
+	 * @return the copy of the current node
+	 */
+	public abstract AbstractSyntaxNode deepCopy();
+
 	//Private methods
 }

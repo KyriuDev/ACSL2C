@@ -1,6 +1,8 @@
 package ast.c;
 
 import ast.AbstractSyntaxTree;
+import ast.c.nodes.CBaseNode;
+import constants.Color;
 import dto.CComment;
 import org.eclipse.cdt.core.dom.ast.IASTNode;
 import org.eclipse.cdt.core.dom.ast.IASTPreprocessorMacroDefinition;
@@ -211,7 +213,7 @@ public class EclipseCDT2Internal
 			}
 			else if (iastNode instanceof CASTTypeIdExpression)
 			{
-				correspondingInternalNode = CFactory.createTypeIdExpressionNode();
+				correspondingInternalNode = CFactory.createTypeIdExpressionNode(((CASTTypeIdExpression) iastNode).getOperator());
 			}
 			else if (iastNode instanceof CASTFieldReference)
 			{
@@ -229,9 +231,28 @@ public class EclipseCDT2Internal
 			{
 				correspondingInternalNode = CFactory.createWhileStatementNode();
 			}
+			else if (iastNode instanceof CASTInitializerList)
+			{
+				correspondingInternalNode = CFactory.createInitializerListNode();
+			}
+			else if (iastNode instanceof CASTProblem
+					|| iastNode instanceof CASTProblemDeclaration
+					|| iastNode instanceof CASTProblemExpression
+					|| iastNode instanceof CASTProblemStatement)
+			{
+				System.out.println(Color.getRedMessage(String.format(
+					"The AST contains a node of type \"%s\", which indicates an error in the parsing. Please check " +
+					"your C file content !",
+					iastNode.toString()))
+				);
+				throw new UnsupportedOperationException();
+			}
 			else
 			{
-				throw new UnsupportedOperationException(String.format("Node type \"%s\" is unknown!", iastNode.toString()));
+				throw new UnsupportedOperationException(String.format(
+					"Node type \"%s\" is unknown!",
+					iastNode.toString())
+				);
 			}
 
 			if (nodeToCommentsMapping.containsKey(iastNode))

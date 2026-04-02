@@ -42,9 +42,27 @@ public class Merger
 			program itself :-)
 		 */
 
-		for (final AbstractSyntaxTree helperStruct : this.translator.getHelperStructures())
+		for (final ACSL2ASTTranslator.TranslationComponents translationComponents : this.translator.getTranslationComponentsList())
 		{
-			this.mainProgramTree.getRoot().addChildAndForceParent(helperStruct.getRoot());
+			if (translationComponents.getFunctionFolding() != null)
+			{
+				//TODO think about the replacement (probably simply replacing the original function call by the translation)
+			}
+
+			for (final AbstractSyntaxTree specificHelperFunction : translationComponents.getSpecificHelperMethods())
+			{
+				this.mainProgramTree.getRoot().addChildAndForceParent(specificHelperFunction.getRoot());
+			}
+
+			for (final AbstractSyntaxTree specificHelperStructure : translationComponents.getSpecificHelperStructures())
+			{
+				this.mainProgramTree.getRoot().addChildAndForceParent(specificHelperStructure.getRoot());
+			}
+		}
+
+		for (final AbstractSyntaxTree helperFunction : this.translator.getGenericHelperMethods())
+		{
+			this.mainProgramTree.getRoot().addChildAndForceParent(helperFunction.getRoot());
 		}
 	}
 

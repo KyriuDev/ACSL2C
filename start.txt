@@ -1,0 +1,1 @@
+clear ; ./compile_and_start.sh --working-dir="<path_to_output_directory>" --c-file="<path_to_C_file>"

@@ -3,14 +3,13 @@ package main;
 import acsl_to_c.ACSL2ASTTranslator;
 import acsl_to_c.Merger;
 import ast.AbstractSyntaxTree;
-import ast.c.CBaseNode;
+import ast.c.nodes.CBaseNode;
 import ast.c.EclipseCDT2Internal;
 import constants.CommandLineOption;
 import constants.c.CProgram;
 import misc.CommandLineParser;
 import org.eclipse.cdt.internal.core.dom.parser.c.CASTTranslationUnit;
 import parsing.ACSLParser;
-import parsing.CommentsHandler;
 import parsing.CParser;
 import parsing.CommentsHandlerV2;
 import visitors.RecursiveVisitor;
@@ -70,13 +69,19 @@ public class Main
 			commentsHandler.computeCommentsPrecedingAndSucceedingNodes();
 			commentsHandler.displayMapping();
 
-			System.out.println("\n----------------- TRANSLATION TO INTERNAL FORMAT -----------------\n");
+			System.out.println("\n----------------- AST TRANSLATION TO INTERNAL FORMAT -----------------\n");
+
 			final AbstractSyntaxTree cProgramTree = EclipseCDT2Internal.translate(translationUnit, commentsHandler.getCommentsPrecedingNodes());
 			System.out.println("C program internal tree:\n\n" + cProgramTree.toString());
 
+			System.out.println("\n----------------- ACSL CONTRACTS PARSING -----------------\n");
+
+			final ACSLParser parser = new ACSLParser(cProgramTree);
+			parser.parse();
+
 			System.out.println("\n----------------- ACSL CONTRACTS TRANSLATION -----------------\n");
 
-			final ACSL2ASTTranslator translator = new ACSL2ASTTranslator();
+			final ACSL2ASTTranslator translator = new ACSL2ASTTranslator(cProgramTree);
 			translator.translate();
 
 			System.out.println("\n----------------- ACSL CONTRACTS AND C PROGRAM FUSION -----------------\n");

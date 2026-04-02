@@ -1,14 +1,11 @@
 package visitors;
 
-import ast.c.ElaboratedTypeSpecifierNode;
 import constants.*;
 import constants.c.*;
 import exceptions.UnhandledElementException;
 import misc.Utils;
 import org.eclipse.cdt.core.dom.ast.*;
 import org.eclipse.cdt.internal.core.dom.parser.c.*;
-
-import java.util.Arrays;
 
 /**
  * Name:        RecursiveVisitor.java
@@ -273,6 +270,8 @@ public class RecursiveVisitor
 		else if (node instanceof CASTTypeIdExpression)
 		{
 			final CASTTypeIdExpression typeIdExpression = (CASTTypeIdExpression) node;
+
+			return CTypeIdExpression.convertEclipseCDTTypeIdExpressionToThis(typeIdExpression.getOperator()).toString();
 		}
 		else if (node instanceof CASTFieldReference)
 		{
@@ -287,6 +286,10 @@ public class RecursiveVisitor
 		else if (node instanceof CASTGotoStatement)
 		{
 			final CASTGotoStatement gotoStatement = (CASTGotoStatement) node;
+		}
+		else if (node instanceof CASTInitializerList)
+		{
+			final CASTInitializerList initializerList = (CASTInitializerList) node;
 		}
 		else if ((node instanceof CASTProblemDeclaration)
 				|| (node instanceof CASTProblem))

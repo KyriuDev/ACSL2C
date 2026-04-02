@@ -3,7 +3,9 @@ package parsing;
 import ast.AbstractSyntaxNode;
 import ast.AbstractSyntaxTree;
 import ast.acsl.AcslFactory;
-import ast.acsl.*;
+import ast.acsl.nodes.*;
+import ast.c.nodes.CFunctionDefinitionNode;
+import constants.Char;
 import constants.ReturnCode;
 import constants.acsl.others.AcslClauseKind;
 import constants.acsl.others.AcslType;
@@ -38,7 +40,8 @@ import java.util.Scanner;
  *              For each ACSL comment found in the program, it sequentially performs the following actions:
  *              	- A system call to SYNTAX in order to effectively parse the comment and obtain the corresponding
  *                    AST;
- *                  - The parsing of the resulting AST provided by SYNTAX in XML format.
+ *                  - The parsing of the resulting AST provided by SYNTAX in XML format;
+ *                  - The storage of the AST into the ACSL comment internal representation.
  *              In the end, the user obtains an AST that can be manipulated by using the defined Java methods.
  * Author:      Quentin Nivon
  * Email:       quentin.nivon@uol.de
@@ -54,6 +57,12 @@ public class ACSLParser
 	private final List<CComment> acslComments;
 
 	//Constructors
+
+	public ACSLParser(final AbstractSyntaxTree abstractSyntaxTree)
+	{
+		this.acslComments = new ArrayList<>();
+		this.extractFunctionContracts(abstractSyntaxTree.getRoot(), this.acslComments);
+	}
 
 	public ACSLParser(final List<CComment> comments)
 	{
@@ -82,7 +91,7 @@ public class ACSLParser
 		while (scanner.hasNextLine())
 		{
 			final String nextLine = scanner.nextLine();
-			builder.append(" "); //Useful to avoid introducing parsing confusions in some rare cases
+			builder.append(Char.SPACE); //Useful to avoid introducing parsing confusions in some rare cases
 			builder.append(nextLine);
 			//System.out.printf("Next line: %s%n", nextLine);
 		}
@@ -860,6 +869,48 @@ public class ACSLParser
 		if (!operatorNode.getChildren().isEmpty())
 		{
 			throwNoChildrenExpectedException(AcslType.OPERATOR.getXmlTag());
+		}
+	}
+
+	/**
+	 * This method is in charge of extracting the comments of the AST corresponding to ACSL function contracts.
+	 * A comment is considered to be an ACSL function contract if it appears immediately before a function definition
+	 * and if it is an ACSL comment (i.e., it starts with an '@').
+	 * The retrieval is based on a depth-first search of the C program's AST.
+	 *
+	 * @param abstractSyntaxNode the current node being analysed
+	 * @param functionContracts the list of function contracts to parse
+	 */
+	private void extractFunctionContracts(final AbstractSyntaxNode abstractSyntaxNode,
+										  final List<CComment> functionContracts)
+	{
+		if (abstractSyntaxNode instanceof CFunctionDefinitionNode)
+		{
+			int nbAcslCommentFound = 0;
+
+			for (final CComment comment : ((CFunctionDefinitionNode) abstractSyntaxNode).getPrecedingComments())
+			{
+				if (comment.isAcslComment())
+				{
+					functionContracts.add(comment);
+					nbAcslCommentFound++;
+				}
+			}
+
+			if (nbAcslCommentFound > 1)
+			{
+				throw new UnsupportedOperationException(String.format(
+					"This approach does not yet handle multiple ACSL function contracts. However, function \"%s\" has" +
+					"%d.",
+					((NameNode) abstractSyntaxNode.getChildren().get(1).getFirstChild()).getName(),
+					nbAcslCommentFound
+				));
+			}
+		}
+
+		for (final AbstractSyntaxNode child : abstractSyntaxNode.getChildren())
+		{
+			this.extractFunctionContracts(child, functionContracts);
 		}
 	}
 
