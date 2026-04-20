@@ -5,7 +5,7 @@ import ast.c.CFactory;
 import constants.c.CBinaryOperator;
 
 /**
- * Name:        BinaryExpressionNode.java
+ * Name:        CBinaryExpressionNode.java
  * Content:     This class is the internal representation of the Eclipse-CDT "CASTBinaryExpression" class.
  * Author:      Quentin Nivon
  * Email:       quentin.nivon@uol.de

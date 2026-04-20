@@ -235,6 +235,10 @@ public class EclipseCDT2Internal
 			{
 				correspondingInternalNode = CFactory.createInitializerListNode();
 			}
+			else if (iastNode instanceof CASTBreakStatement)
+			{
+				correspondingInternalNode = CFactory.createBreakStatementNode();
+			}
 			else if (iastNode instanceof CASTProblem
 					|| iastNode instanceof CASTProblemDeclaration
 					|| iastNode instanceof CASTProblemExpression

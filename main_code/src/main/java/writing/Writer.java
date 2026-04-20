@@ -1153,6 +1153,10 @@ public class Writer
 			{
 				this.dumpFunctionCallExpression(printWriter, (CFunctionCallExpressionNode) child, 0);
 			}
+			else if (child instanceof CUnaryExpressionNode)
+			{
+				this.dumpUnaryExpression(printWriter, (CUnaryExpressionNode) child, 0);
+			}
 			else
 			{
 				throw new UnhandledElementException(String.format(
@@ -1367,6 +1371,10 @@ public class Writer
 		{
 			this.dumpLabelStatement(printWriter, (CLabelStatementNode) ifBody, nbTabs + 1);
 		}
+		else if (ifBody instanceof CBreakStatementNode)
+		{
+			this.dumpBreakStatement(printWriter, (CBreakStatementNode) ifBody, nbTabs + 1);
+		}
 		else
 		{
 			throw new UnhandledElementException(String.format(
@@ -1432,6 +1440,17 @@ public class Writer
 
 		printWriter.println();
 		//printWriter.println();
+	}
+
+	private void dumpBreakStatement(final PrintWriter printWriter,
+								    final CBreakStatementNode breakStatement,
+								    final int nbTabs)
+	{
+		this.dumpPrecedingCommentsIfAny(printWriter, breakStatement, nbTabs);
+
+		printWriter.print(Utils.addLeadingTabulations(nbTabs));
+		printWriter.print(CKeyword.BREAK);
+		printWriter.println(Char.SEMI_COLON);
 	}
 
 	private void dumpDeclarationStatement(final PrintWriter printWriter,

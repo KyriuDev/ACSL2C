@@ -48,6 +48,11 @@ public class CFactory
 		return new CBinaryExpressionNode(binaryOperator);
 	}
 
+	public static CBreakStatementNode createBreakStatementNode()
+	{
+		return new CBreakStatementNode();
+	}
+
 	public static CCastExpressionNode createCastExpressionNode()
 	{
 		return new CCastExpressionNode();

@@ -15,6 +15,7 @@ public class CKeyword
 
 	}
 
+	public static final String BREAK = "break";
 	public static final String ELSE = "else";
 	public static final String ELSE_IF = "else if";
 	public static final String FOR = "for";
