@@ -6,45 +6,20 @@ The shape of the handled contracts is for now slightly restricted: "assumes" and
 
 Usage
 ===============================
-
+The ACSL2C tool must first be compiled into a JAR executable.
+To do so, you can either use the "compile.sh" bash script, or execute the command "mvn package" from inside the root directory.
+This will build the desired JAR executable, that you can then execute using the command "java -jar <path_of_the_jar_file> --working-dir=<path_of_the_working_dir> --c-file=<path_to_the_c_file>".
 
 Required Softwares
 =======================================
-
-Important information
-======================================
-The VBPMN tool relies on the CADP toolbox that is updated once per month.
-If you upgrade CADP on your machine, VBPMN must also be upgraded to a newer version, compliant with the most recent
-version of CADP.
-This can be done by [**downloading again the VBPMN WAR file
-**](https://quentinnivon.github.io/vbpmn/latest/transformation.war)
-and replacing the old WAR file of the Tomcat by the new one.
-If you have any issue with a subsequent version of VBPMN, please send an email to quentin.nivon@inria.fr.
-
-Browser Compatibility
-====================================
-The web app has been tested on the following browsers.
-
-* Mozilla Firefox 47.0
-* Google Chrome 51.0.2704
+- [Java >= 17.0.0](https://www.oracle.com/java/technologies/downloads/)
+- [Syntax](https://sourcesup.renater.fr/projects/syntax)
 
 Contributors
 =====================================
 
-* [Pascal Poizat](http://pascalpoizat.github.io/)
-* [Gwen Salaün](http://convecs.inria.fr/people/Gwen.Salaun/)
-* [Ajay Krishna](https://about.me/ajaykrishna)
 * [Quentin Nivon](https://quentinnivon.github.io/)
 
 License
 =============================
-[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE.md)
-
-Web pages
-============
-The website is built on top of:
-
-- [Bootstrap](http://getbootstrap.com/), version 3.0.3, licenced under Apache Licence 2.0
-- [Font Awesome](http://fortawesome.github.io/Font-Awesome/), version 4.1.0, licenced under SIL OFL 1.1 (desktop and
-  webfont files) and MIT Licence (css and less files)
-- [Glyph Icons Halflings](http://glyphicons.com/), released under the same licence as Bootstrap
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE.txt)
