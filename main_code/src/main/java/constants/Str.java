@@ -2,7 +2,7 @@ package constants;
 
 /**
  * Name:        Str.java
- * Content:     This class stores constant classical String values (", " etc) so as to make the code look cleaner.
+ * Content:     This class stores constant classical String values (", " etc) to make the code look cleaner.
  * Author:      Quentin Nivon
  * Email:       quentin.nivon@uol.de
  * Creation:    27/02/26

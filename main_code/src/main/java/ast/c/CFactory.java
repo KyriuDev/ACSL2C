@@ -83,6 +83,11 @@ public class CFactory
 		return new CDeclaratorNode();
 	}
 
+	public static CDesignatedInitializer createDesignatedInitializer()
+	{
+		return new CDesignatedInitializer();
+	}
+
 	public static CElaboratedTypeSpecifierNode createElaboratedTypeSpecifierNode(final int specifierKind)
 	{
 		return CFactory.createElaboratedTypeSpecifierNode(CElaboratedTypeSpecifier.convertEclipseCDTElaboratedTypeSpecifierToThis(specifierKind));
@@ -103,9 +108,14 @@ public class CFactory
 		return new CExpressionStatementNode();
 	}
 
-	public static CFieldReferenceNode createFieldReferenceNode()
+	public static CFieldDesignatorNode createFieldDesignatorNode()
 	{
-		return new CFieldReferenceNode();
+		return new CFieldDesignatorNode();
+	}
+
+	public static CFieldReferenceNode createFieldReferenceNode(final boolean isPointerDereference)
+	{
+		return new CFieldReferenceNode(isPointerDereference);
 	}
 
 	public static CForStatementNode createForStatementNode()

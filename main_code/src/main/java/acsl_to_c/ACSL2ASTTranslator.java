@@ -5,6 +5,8 @@ import ast.AbstractSyntaxTree;
 import ast.acsl.nodes.*;
 import ast.c.*;
 import ast.c.nodes.*;
+import constants.Str;
+import constants.acsl.others.ACSLKeyword;
 import constants.acsl.others.AcslType;
 import constants.acsl_to_c.HelperFunctionName;
 import constants.acsl_to_c.HelperFunctionParameter;
@@ -15,6 +17,7 @@ import misc.Pair;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 
 /**
@@ -104,13 +107,13 @@ public class ACSL2ASTTranslator
 	 *     2) The requirements to be met by the contract are separated to distinguish each distinct "requires" clause
 	 *        and/or behaviour, thus potentially leading to a conjunction of requirements in the "if" condition.
 	 *     3) For clarity, requirements are always wrapped by helper functions, independently of their complexity, in
-	 *        order to maintain some clarity in the code.
+	 *        order to maintain some readability in the code.
 	 *        The helper functions will reuse the name of the behaviour if the requirements are nested in behaviours,
 	 *        or a generic prefix otherwise.
 	 *     4) Statements involving logical operators such as "A ==> B" (resp. "A <==> B") are currently translated
 	 *        as "!A || B" (resp. "(!A || B) && (!B || A)").
 	 *     5) Ensures clauses are translated in a "maximise information no loop" fashion, meaning that quantifiers
-	 *        appearing in ensures clauses will never be translated as loops, and will always make use of the power
+	 *        appearing in ensures clauses will never be translated to loops, and will always make use of the power
 	 *        of the "__VERIFIER_nondet_<type>()" C external function.
 	 *     6) Assign clauses are currently ignored.
 	 *     7) The management of the ACSL operator "\old(value)" is ensured by a helper structure containing the values
@@ -123,8 +126,13 @@ public class ACSL2ASTTranslator
 													final AbstractSyntaxTree contractTree) throws UnhandledElementException
 	{
 		//The translation will always start with a CompoundStatementNode
-		final TranslationComponents translationComponents = new TranslationComponents(new AbstractSyntaxTree(CFactory.createCompoundStatementNode()));
+		final TranslationComponents translationComponents = new TranslationComponents(
+			new AbstractSyntaxTree(CFactory.createCompoundStatementNode())
+		);
+		final String functionName = ((CFunctionDefinitionNode) functionTree.getRoot()).getFunctionName();
+		final HashSet<String> oldVariables = new HashSet<>();
 		int globalRequiresClauseIndex = 1;
+		System.out.println("Function name: " + functionName);
 
 		for (final AbstractSyntaxNode child : contractTree.getRoot().getFirstChild().getChildren())
 		{
@@ -133,12 +141,45 @@ public class ACSL2ASTTranslator
 			if (acslChild.getType() == AcslType.REQUIRES_CLAUSE_LIST)
 			{
 				//These are global "requires" clauses
-				this.manageGlobalRequiresClause(acslChild, translationComponents, globalRequiresClauseIndex, functionTree);
-				globalRequiresClauseIndex++;
+				for (final AbstractSyntaxNode requiresClause : acslChild.getChildren())
+				{
+					this.manageGlobalRequiresClause(
+						(AcslBaseNode) requiresClause,
+						translationComponents,
+						globalRequiresClauseIndex,
+						functionTree,
+						functionName
+					);
+					globalRequiresClauseIndex++;
+				}
 			}
 			else if (acslChild.getType() == AcslType.SIMPLE_CLAUSE_LIST)
 			{
 				//These are global "assigns"/"ensures" clauses
+				for (final AbstractSyntaxNode simpleClause : acslChild.getChildren())
+				{
+					if (simpleClause instanceof EnsuresClauseNode)
+					{
+						this.manageGlobalEnsuresClause(
+							(EnsuresClauseNode) simpleClause,
+							translationComponents,
+							functionTree,
+							functionName,
+							oldVariables
+						);
+					}
+					else if (simpleClause instanceof AssignClauseNode)
+					{
+
+					}
+					else
+					{
+						throw new UnhandledElementException(String.format(
+							"Node type \"%s\" is not yet handled as child of a simple clauses list!",
+							((AcslBaseNode) child).getType().getReadableName()
+						));
+					}
+				}
 			}
 			else if (acslChild.getType() == AcslType.NAMED_BEHAVIOR_LIST)
 			{
@@ -151,6 +192,9 @@ public class ACSL2ASTTranslator
 					((AcslBaseNode) child).getType().getReadableName()
 				));
 			}
+
+			//Create structures to preserve the variables used by "\old()" ACSL construct.
+
 		}
 
 		return translationComponents;
@@ -159,10 +203,20 @@ public class ACSL2ASTTranslator
 	private void manageGlobalRequiresClause(final AcslBaseNode requiresClause,
 											final TranslationComponents translationComponents,
 											final int requiresClauseIndex,
-											final AbstractSyntaxTree functionTree) throws UnhandledElementException
+											final AbstractSyntaxTree functionTree,
+											final String functionName) throws UnhandledElementException
 	{
-		this.createRequiresHelperFunction(requiresClause, translationComponents, requiresClauseIndex, functionTree, true);
-		this.createRequiresHelperFunction(requiresClause, translationComponents, requiresClauseIndex, functionTree, false);
+		this.createRequiresHelperFunction(requiresClause, translationComponents, requiresClauseIndex, functionTree, functionName, true);
+		this.createRequiresHelperFunction(requiresClause, translationComponents, requiresClauseIndex, functionTree, functionName, false);
+	}
+
+	private void manageGlobalEnsuresClause(final AcslBaseNode requiresClause,
+										   final TranslationComponents translationComponents,
+										   final AbstractSyntaxTree functionTree,
+										   final String functionName,
+										   final HashSet<String> oldVariables) throws UnhandledElementException
+	{
+
 	}
 
 	/**
@@ -176,11 +230,14 @@ public class ACSL2ASTTranslator
 											  final TranslationComponents translationComponents,
 											  final int requiresClauseIndex,
 											  final AbstractSyntaxTree functionTree,
+											  final String functionName,
 											  final boolean signatureOnly) throws UnhandledElementException
 	{
 		final AbstractSyntaxTree requiresClauseMetFunction = new AbstractSyntaxTree(
 			signatureOnly ? CFactory.createSimpleDeclarationNode() : CFactory.createFunctionDefinitionNode()
 		);
+
+		translationComponents.addSpecificHelperMethod(requiresClauseMetFunction);
 
 		if (!signatureOnly)
 		{
@@ -189,8 +246,10 @@ public class ACSL2ASTTranslator
 				CCommentType.MULTI_LINE,
 				String.format(
 					"/*\n\tThis function was generated by the ACSL2C translator. It aims at verifying" +
-					"\n\tthat the %s requirement of the contract is met.*/",
-					requiresClauseIndex == 1 ? "1st" : requiresClauseIndex == 2 ? "2nd" : requiresClauseIndex == 3 ? "3rd" : requiresClauseIndex + "th"
+					"\n\tthat the %s requirement of the \"%s\" function's contract is met." +
+					"\n*/",
+					requiresClauseIndex == 1 ? "1st" : requiresClauseIndex == 2 ? "2nd" : requiresClauseIndex == 3 ? "3rd" : requiresClauseIndex + "th",
+					functionName
 				)
 			));
 		}
@@ -208,6 +267,7 @@ public class ACSL2ASTTranslator
 		//------ Name: "global_req_<index>_satisfied"
 		final CNameNode nameNode = CFactory.createNameNode(String.format(
 			HelperFunctionName.GLOBAL_REQUIREMENT_SATISFIED,
+			functionName,
 			requiresClauseIndex
 		));
 		functionDeclaratorNode.addChildAndForceParent(nameNode);
@@ -242,7 +302,7 @@ public class ACSL2ASTTranslator
 			}
 			else
 			{
-				//Otherwise, it is a bit more tricky :-)
+				//Otherwise, it is a bit more tricky... :-)
 			}
 		}
 	}
@@ -257,6 +317,11 @@ public class ACSL2ASTTranslator
 			final CBinaryExpressionNode binaryExpressionNode = this.convertAcslBinaryOperationNodeToC((BinaryOperationNode) child);
 			returnStatementNode.addChildAndForceParent(binaryExpressionNode);
 		}
+		else if (child instanceof PredicateOrTermNode)
+		{
+			final CBaseNode predicateOrTermNode = this.convertAcslPredicateOrTermNodeToC((PredicateOrTermNode) child);
+			returnStatementNode.addChildAndForceParent(predicateOrTermNode);
+		}
 		else
 		{
 			throw new UnhandledElementException(String.format(
@@ -268,26 +333,43 @@ public class ACSL2ASTTranslator
 		return returnStatementNode;
 	}
 
+	private CUnaryExpressionNode convertAcslUnaryOperationNodeToC(final UnaryOperationNode unaryOperationNode) throws UnhandledElementException
+	{
+		final CUnaryExpressionNode unaryExpressionNode = CFactory.createUnaryExpressionNode(unaryOperationNode.getOperator());
+
+		final AbstractSyntaxNode child = unaryOperationNode.getFirstChild();
+
+		if (child instanceof LiteralNode)
+		{
+			final CLiteralExpressionNode literalExpressionNode = this.convertAcslLiteralNodeToC((LiteralNode) child);
+			unaryExpressionNode.addChildAndForceParent(literalExpressionNode);
+		}
+		else
+		{
+			throw new UnhandledElementException(String.format(
+				"Node type \"%s\" is not yet handled as child of a unary operation!",
+				((AcslBaseNode) child).getType().getReadableName()
+			));
+		}
+
+		return unaryExpressionNode;
+	}
+
 	private CBinaryExpressionNode convertAcslBinaryOperationNodeToC(final BinaryOperationNode binaryOperationNode) throws UnhandledElementException
 	{
 		final CBinaryExpressionNode binaryExpressionNode;
 
-		if (binaryOperationNode.getChildren().size() == 2)
-		{
-			//The translation is immediate because the C representation is identical
-			binaryExpressionNode = CFactory.createBinaryExpressionNode(
-				binaryOperationNode.getOperator()
-			);
-
-			final CBaseNode firstChild = this.manageBinaryExpressionChild(binaryOperationNode.getChildren().get(0));
-			final CBaseNode secondChild = this.manageBinaryExpressionChild(binaryOperationNode.getChildren().get(1));
-			binaryExpressionNode.addChildAndForceParent(firstChild);
-			binaryExpressionNode.addChildAndForceParent(secondChild);
-		}
-		else
+		if (binaryOperationNode.getChildren().size() > 2
+			&& (binaryOperationNode.getOperator() == CBinaryOperator.LESS_THAN
+				|| binaryOperationNode.getOperator() == CBinaryOperator.LESS_OR_EQUAL
+				|| binaryOperationNode.getOperator() == CBinaryOperator.GREATER_THAN
+				|| binaryOperationNode.getOperator() == CBinaryOperator.GREATER_OR_EQUAL
+				|| binaryOperationNode.getOperator() == CBinaryOperator.EQUALS
+				|| binaryOperationNode.getOperator() == CBinaryOperator.NOT_EQUALS))
 		{
 			/*
-				In ACSL, binary operators are associative, which is not the case in C, thus we split the ACSL operators
+				In ACSL, some binary operators are associative, whereas they are not in C.
+				Thus, for these specific operators (namely, <, <=, >=, >, ==, !=), we must split the ACSL operators
 				associations into conjunction of binary operations with two operands only.
 				For instance, the ACSL binary operation "0 <= x <= y <= 100" will be translated to
 				"0 <= x && x <= y && y <= 100" in C.
@@ -301,7 +383,7 @@ public class ACSL2ASTTranslator
 				final AcslBaseNode secondChild = (AcslBaseNode) binaryOperationNode.getChildren().get(i + 1);
 
 				final CBinaryExpressionNode currentBinaryExpression = CFactory.createBinaryExpressionNode(
-					binaryOperationNode.getOperator()
+						binaryOperationNode.getOperator()
 				);
 				binaryExpressionSubparts.add(currentBinaryExpression);
 
@@ -324,7 +406,7 @@ public class ACSL2ASTTranslator
 			{
 				final AbstractSyntaxNode leftNode = binaryExpressionSubparts.get(i);
 				final CBinaryExpressionNode logicalAndNode = CFactory.createBinaryExpressionNode(
-					CBinaryOperator.LOGICAL_AND
+						CBinaryOperator.LOGICAL_AND
 				);
 				logicalAndNode.addChildAndForceParent(leftNode);
 				logicalAndNode.addChildAndForceParent(rightNode);
@@ -337,6 +419,19 @@ public class ACSL2ASTTranslator
 			}
 
 			binaryExpressionNode = rightNode;
+		}
+		else
+		{
+			//The translation is immediate because the C representation is identical
+			binaryExpressionNode = CFactory.createBinaryExpressionNode(
+				binaryOperationNode.getOperator()
+			);
+
+			for (final AbstractSyntaxNode child : binaryOperationNode.getChildren())
+			{
+				final CBaseNode correspondingChild = this.manageBinaryExpressionChild(child);
+				binaryExpressionNode.addChildAndForceParent(correspondingChild);
+			}
 		}
 
 		return binaryExpressionNode;
@@ -358,6 +453,10 @@ public class ACSL2ASTTranslator
 		{
 			childNode = this.convertAcslValidNodeToC((ValidNode) node);
 		}
+		else if (node instanceof PredicateOrTermNode)
+		{
+			childNode = this.convertAcslPredicateOrTermNodeToC((PredicateOrTermNode) node);
+		}
 		else
 		{
 			throw new UnhandledElementException(String.format(
@@ -367,6 +466,76 @@ public class ACSL2ASTTranslator
 		}
 
 		return childNode;
+	}
+
+	private CBaseNode convertAcslPredicateOrTermNodeToC(final PredicateOrTermNode predicateOrTermNode) throws UnhandledElementException
+	{
+		System.out.println("Predicate or term kind: " + predicateOrTermNode.getKind().getName());
+
+		switch (predicateOrTermNode.getKind())
+		{
+			case ARRAY_ACCESS:
+			{
+				break;
+			}
+
+			case BINARY_OPERATOR:
+			{
+				break;
+			}
+
+			case EXISTS:
+			{
+				break;
+			}
+
+			case FOR_ALL:
+			{
+				break;
+			}
+
+			case IDENTIFIER:
+			{
+				break;
+			}
+
+			case LITERAL:
+			{
+				return this.convertAcslLiteralNodeToC((LiteralNode) predicateOrTermNode);
+			}
+
+			case OLD:
+			{
+				break;
+			}
+
+			case RANGE:
+			{
+				break;
+			}
+
+			case RESULT:
+			{
+				break;
+			}
+
+			case SYNTACTIC_NAMING:
+			{
+				break;
+			}
+
+			case UNARY_OPERATOR:
+			{
+				return this.convertAcslUnaryOperationNodeToC((UnaryOperationNode) predicateOrTermNode);
+			}
+
+			case VALID:
+			{
+				break;
+			}
+		}
+
+		return null;
 	}
 
 	private CBaseNode convertAcslValidNodeToC(final ValidNode validNode) throws UnhandledElementException
@@ -471,7 +640,23 @@ public class ACSL2ASTTranslator
 
 	private CLiteralExpressionNode convertAcslLiteralNodeToC(final LiteralNode node)
 	{
-		return CFactory.createLiteralExpressionNode(node.getContent());
+		final String content;
+
+		//Some ACSL literals must be converted to their "equivalent" C literals (e.g., "\false" in ACSL is "0" in C)
+		if (node.getContent().equals(ACSLKeyword.FALSE.getKeyword()))
+		{
+			content = CBooleanValue.FALSE.getIntValueString();
+		}
+		else if (node.getContent().equals(ACSLKeyword.TRUE.getKeyword()))
+		{
+			content = CBooleanValue.TRUE.getIntValueString();
+		}
+		else
+		{
+			content = node.getContent();
+		}
+
+		return CFactory.createLiteralExpressionNode(content);
 	}
 
 	private CIdExpressionNode convertAcslIdentifierNodeToC(final IdentifierNode identifierNode)
@@ -788,9 +973,19 @@ public class ACSL2ASTTranslator
 
 		//Public methods
 
+		public void addSpecificHelperMethod(final AbstractSyntaxTree specificHelperMethod)
+		{
+			this.specificHelperMethods.add(specificHelperMethod);
+		}
+
 		public List<AbstractSyntaxTree> getSpecificHelperMethods()
 		{
 			return Collections.unmodifiableList(this.specificHelperMethods);
+		}
+
+		public void addSpecificHelperStructure(final AbstractSyntaxTree specificHelperStructure)
+		{
+			this.specificHelperStructures.add(specificHelperStructure);
 		}
 
 		public List<AbstractSyntaxTree> getSpecificHelperStructures()

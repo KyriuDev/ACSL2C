@@ -17,5 +17,5 @@ public class HelperFunctionName
 
 	public static final String CHECK_ARRAY_VALIDITY = "_array_is_valid";
 	//This must be used with an appropriate call to "String.format()"!
-	public static final String GLOBAL_REQUIREMENT_SATISFIED = "_global_req_%s_satisfied";
+	public static final String GLOBAL_REQUIREMENT_SATISFIED = "_%s_global_req_%s_satisfied";
 }

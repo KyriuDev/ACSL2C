@@ -2,6 +2,7 @@ package misc;
 
 import constants.Color;
 import constants.CommandLineOption;
+import constants.Str;
 
 import java.io.File;
 import java.util.HashMap;
@@ -316,12 +317,25 @@ public class CommandLineParser
             if (arg.startsWith(cFileOptionPrefix)
                 && arg.endsWith(".c"))
             {
-                final String cFilePath = arg.replace(cFileOptionPrefix, "");
+                final String cFilePath = arg.replace(cFileOptionPrefix, Str.EMPTY_STRING);
                 final File cFile = new File(cFilePath);
 
                 if (cFile.isFile())
                 {
                     return cFile.getAbsolutePath();
+                }
+                else
+                {
+                    System.out.println(Color.getRedMessage(String.format(
+                        "\"--c-file\" argument was given but the corresponding path (\"%s\") does not point to a " +
+                        "valid C file!",
+                        cFilePath
+                    )));
+                    throw new IllegalStateException(String.format(
+                        "\"--c-file\" argument was given but the corresponding path (\"%s\") does not point to a " +
+                        "valid C file!",
+                        cFilePath
+                    ));
                 }
             }
         }

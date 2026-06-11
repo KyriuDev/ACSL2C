@@ -14,7 +14,6 @@ import org.eclipse.cdt.core.dom.ast.IASTBinaryExpression;
 
 public enum CBinaryOperator
 {
-	ARROW_FIELD_ACCESS("->", null, IASTBinaryExpression.op_pmarrow),
 	ASSIGNMENT("=", null, IASTBinaryExpression.op_assign),
 	BINARY_AND("&", "band", IASTBinaryExpression.op_binaryAnd),
 	BINARY_AND_ASSIGNMENT("&=", null, IASTBinaryExpression.op_binaryAndAssign),
@@ -24,9 +23,10 @@ public enum CBinaryOperator
 	BINARY_OR_ASSIGNMENT("|=", null, IASTBinaryExpression.op_binaryOrAssign),
 	BINARY_XOR("^", "bxor", IASTBinaryExpression.op_binaryXor),
 	BINARY_XOR_ASSIGNMENT("^=", null, IASTBinaryExpression.op_binaryXorAssign),
+	DEREFERENCE_FIELD_ACCESS("->", null, IASTBinaryExpression.op_pmarrow),
+	DIRECT_FIELD_ACCESS(".", null, IASTBinaryExpression.op_pmdot),
 	DIVIDE("/", "div", IASTBinaryExpression.op_divide),
 	DIVIDE_ASSIGNMENT("/=", null, IASTBinaryExpression.op_divideAssign),
-	DOT_FIELD_ACCESS(".", null, IASTBinaryExpression.op_pmdot),
 	ELLIPSES("...", null, IASTBinaryExpression.op_ellipses),
 	EQUALS("==", "eq", IASTBinaryExpression.op_equals),
 	GREATER_OR_EQUAL(">=", "geq", IASTBinaryExpression.op_greaterEqual),

@@ -13,7 +13,7 @@ This will build the desired JAR executable, that you can then execute using the 
 Required Softwares
 =======================================
 - [Java >= 17.0.0](https://www.oracle.com/java/technologies/downloads/)
-- [Syntax](https://sourcesup.renater.fr/projects/syntax)
+- [SYNTAX](https://sourcesup.renater.fr/projects/syntax)
 
 Contributors
 =====================================

@@ -39,7 +39,7 @@ public class Merger
 			the writer itself.
 			More advanced versions of this tool might want to slightly alter this behaviour so as not to rely on the
 			behaviour of the writer, which, in a perfect world, should not decide where to put the elements of the
-			program itself :-)
+			program itself... :-)
 		 */
 
 		for (final ACSL2ASTTranslator.TranslationComponents translationComponents : this.translator.getTranslationComponentsList())

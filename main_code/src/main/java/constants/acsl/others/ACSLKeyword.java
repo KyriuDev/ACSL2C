@@ -10,7 +10,9 @@ package constants.acsl.others;
 
 public enum ACSLKeyword
 {
-	AT("@")
+	AT("@"),
+	FALSE("\\false"),
+	TRUE("\\true")
 	;
 
 	private final String keyword;

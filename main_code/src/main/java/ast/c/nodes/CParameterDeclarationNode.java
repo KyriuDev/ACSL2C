@@ -27,7 +27,7 @@ public class CParameterDeclarationNode extends CBaseNode
 	@Override
 	public AbstractSyntaxNode copy()
 	{
-		return CFactory.createNullStatementNode();
+		return CFactory.createParameterDeclarationNode();
 	}
 
 	@Override

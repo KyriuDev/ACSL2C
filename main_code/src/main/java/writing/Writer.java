@@ -244,6 +244,10 @@ public class Writer
 					- Global variables
 					- Function definitions
 			 */
+			final StringBuilder builder = new StringBuilder();
+			this.internalAstRootNode.stringify(builder, 0);
+			System.out.println("AST of the C program to dump:\n\n" + builder.toString());
+
 			final ArrayList<CSimpleDeclarationNode> functionDeclarations = new ArrayList<>();
 			final ArrayList<CSimpleDeclarationNode> globalVariables = new ArrayList<>();
 			final ArrayList<CFunctionDefinitionNode> functionDefinitions = new ArrayList<>();
@@ -578,6 +582,7 @@ public class Writer
 			{
 				this.dumpPointer(printWriter, (CPointerNode) child, 0);
 			}
+
 			else
 			{
 				throw new UnhandledElementException(String.format(
@@ -811,6 +816,10 @@ public class Writer
 			{
 				this.dumpLiteralExpression(printWriter, (CLiteralExpressionNode) child, 0);
 			}
+			else if (child instanceof CDesignatedInitializer)
+			{
+				this.dumpDesignatedInitializer(printWriter, (CDesignatedInitializer) child, 0);
+			}
 			else
 			{
 				throw new UnhandledElementException(String.format(
@@ -821,6 +830,69 @@ public class Writer
 		}
 
 		printWriter.print(Char.CLOSING_CURVY_BRACKET);
+	}
+
+	private void dumpDesignatedInitializer(final PrintWriter printWriter,
+										   final CDesignatedInitializer designatedInitializer,
+										   final int nbTabs) throws UnhandledElementException
+	{
+		this.dumpPrecedingCommentsIfAny(printWriter, designatedInitializer, nbTabs);
+
+		printWriter.print(Utils.addLeadingTabulations(nbTabs));
+
+		for (final AbstractSyntaxNode child : designatedInitializer.getChildren())
+		{
+			if (child instanceof CFieldDesignatorNode)
+			{
+				this.dumpFieldDesignator(printWriter, (CFieldDesignatorNode) child, 0);
+			}
+			else if (child instanceof CIdExpressionNode)
+			{
+				printWriter.print(Char.SPACE);
+				printWriter.print(CBinaryOperator.ASSIGNMENT.getOperator());
+				printWriter.print(Char.SPACE);
+				this.dumpIdExpression(printWriter, (CIdExpressionNode) child, 0);
+			}
+			else if (child instanceof CLiteralExpressionNode)
+			{
+				printWriter.print(Char.SPACE);
+				printWriter.print(CBinaryOperator.ASSIGNMENT.getOperator());
+				printWriter.print(Char.SPACE);
+				this.dumpLiteralExpression(printWriter, (CLiteralExpressionNode) child, 0);
+			}
+			else
+			{
+				throw new UnhandledElementException(String.format(
+					"Node type \"%s\" is not yet handled as child of a DesignatedInitializer!",
+					child.toString()
+				));
+			}
+		}
+	}
+
+	private void dumpFieldDesignator(final PrintWriter printWriter,
+									 final CFieldDesignatorNode fieldDesignator,
+									 final int nbTabs) throws UnhandledElementException
+	{
+		this.dumpPrecedingCommentsIfAny(printWriter, fieldDesignator, nbTabs);
+
+		printWriter.print(Utils.addLeadingTabulations(nbTabs));
+		printWriter.print(CBinaryOperator.DIRECT_FIELD_ACCESS.getOperator());
+
+		for (final AbstractSyntaxNode child : fieldDesignator.getChildren())
+		{
+			if (child instanceof CNameNode)
+			{
+				this.dumpName(printWriter, (CNameNode) child, 0);
+			}
+			else
+			{
+				throw new UnhandledElementException(String.format(
+					"Node type \"%s\" is not yet handled as child of a FieldDesignator!",
+					child.toString()
+				));
+			}
+		}
 	}
 
 	private void dumpFunctionDefinition(final PrintWriter printWriter,
@@ -976,6 +1048,10 @@ public class Writer
 		{
 			this.dumpFunctionCallExpression(printWriter, (CFunctionCallExpressionNode) whileCondition, 0);
 		}
+		else if (whileCondition instanceof CLiteralExpressionNode)
+		{
+			this.dumpLiteralExpression(printWriter, (CLiteralExpressionNode) whileCondition, 0);
+		}
 		else
 		{
 			throw new UnhandledElementException(String.format(
@@ -1122,6 +1198,10 @@ public class Writer
 			else if (child instanceof CIdExpressionNode)
 			{
 				this.dumpIdExpression(printWriter, (CIdExpressionNode) child, 0);
+			}
+			else if (child instanceof CUnaryExpressionNode)
+			{
+				this.dumpUnaryExpression(printWriter, (CUnaryExpressionNode) child, 0);
 			}
 			else
 			{
@@ -1336,6 +1416,10 @@ public class Writer
 		{
 			this.dumpIdExpression(printWriter, (CIdExpressionNode) ifCondition, 0);
 		}
+		else if (ifCondition instanceof CLiteralExpressionNode)
+		{
+			this.dumpLiteralExpression(printWriter, (CLiteralExpressionNode) ifCondition, 0);
+		}
 		else
 		{
 			throw new UnhandledElementException(String.format(
@@ -1411,6 +1495,19 @@ public class Writer
 				printWriter.println(Str.SPACE_AND_OPENING_CURVY_BRACKET);
 
 				this.dumpExpressionStatement(printWriter, (CExpressionStatementNode) child, nbTabs + 1);
+
+				printWriter.println();
+				printWriter.print(Utils.addLeadingTabulations(nbTabs));
+				printWriter.print(Char.CLOSING_CURVY_BRACKET);
+			}
+			else if (child instanceof CReturnStatementNode)
+			{
+				//This is also an "else"...
+				printWriter.print(Char.SPACE);
+				printWriter.print(CKeyword.ELSE);
+				printWriter.println(Str.SPACE_AND_OPENING_CURVY_BRACKET);
+
+				this.dumpReturnStatement(printWriter, (CReturnStatementNode) child, nbTabs + 1, false);
 
 				printWriter.println();
 				printWriter.print(Utils.addLeadingTabulations(nbTabs));
@@ -1558,7 +1655,11 @@ public class Writer
 		{
 			if (leftPartHandled)
 			{
-				printWriter.print(CBinaryOperator.ARROW_FIELD_ACCESS);
+				printWriter.print(
+					fieldReference.isPointerDereference() ?
+					CBinaryOperator.DEREFERENCE_FIELD_ACCESS :
+					CBinaryOperator.DIRECT_FIELD_ACCESS
+				);
 			}
 
 			if (child instanceof CIdExpressionNode)

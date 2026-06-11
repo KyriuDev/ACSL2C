@@ -217,7 +217,9 @@ public class EclipseCDT2Internal
 			}
 			else if (iastNode instanceof CASTFieldReference)
 			{
-				correspondingInternalNode = CFactory.createFieldReferenceNode();
+				correspondingInternalNode = CFactory.createFieldReferenceNode(
+					((CASTFieldReference) iastNode).isPointerDereference()
+				);
 			}
 			else if (iastNode instanceof CASTLabelStatement)
 			{
@@ -239,6 +241,14 @@ public class EclipseCDT2Internal
 			{
 				correspondingInternalNode = CFactory.createBreakStatementNode();
 			}
+			else if (iastNode instanceof CASTDesignatedInitializer)
+			{
+				correspondingInternalNode = CFactory.createDesignatedInitializer();
+			}
+			else if (iastNode instanceof CASTFieldDesignator)
+			{
+				correspondingInternalNode = CFactory.createFieldDesignatorNode();
+			}
 			else if (iastNode instanceof CASTProblem
 					|| iastNode instanceof CASTProblemDeclaration
 					|| iastNode instanceof CASTProblemExpression
@@ -247,12 +257,16 @@ public class EclipseCDT2Internal
 				System.out.println(Color.getRedMessage(String.format(
 					"The AST contains a node of type \"%s\", which indicates an error in the parsing. Please check " +
 					"your C file content !",
-					iastNode.toString()))
-				);
+					iastNode.toString()
+				)));
 				throw new UnsupportedOperationException();
 			}
 			else
 			{
+				System.out.println(Color.getYellowMessage(String.format(
+					"Node type \"%s\" is unknown!",
+					iastNode.toString()
+				)));
 				throw new UnsupportedOperationException(String.format(
 					"Node type \"%s\" is unknown!",
 					iastNode.toString())

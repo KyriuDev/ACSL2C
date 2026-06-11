@@ -26,4 +26,27 @@ public class CFunctionDefinitionNode extends CBaseNode
 	{
 		return CFactory.createFunctionDefinitionNode();
 	}
+
+	//Public methods
+
+	public String getFunctionName()
+	{
+		for (final AbstractSyntaxNode child : this.getChildren())
+		{
+			if (child instanceof CFunctionDeclaratorNode)
+			{
+				for (final AbstractSyntaxNode childChild : child.getChildren())
+				{
+					if (childChild instanceof CNameNode)
+					{
+						return ((CNameNode) childChild).getValue();
+					}
+				}
+			}
+		}
+
+		throw new IllegalStateException("Function should always have a name under \"Function declarator\" => \"Name\"!");
+	}
+
+	//Private methods
 }

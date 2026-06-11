@@ -13,6 +13,15 @@ import ast.c.CFactory;
 
 public class CFieldReferenceNode extends CBaseNode
 {
+	private final boolean isPointerDereference;
+
+	//Constructors
+
+	public CFieldReferenceNode(final boolean isPointerDereference)
+	{
+		this.isPointerDereference = isPointerDereference;
+	}
+
 	//Overrides
 
 	@Override
@@ -38,6 +47,13 @@ public class CFieldReferenceNode extends CBaseNode
 	@Override
 	public AbstractSyntaxNode copy()
 	{
-		return CFactory.createFieldReferenceNode();
+		return CFactory.createFieldReferenceNode(this.isPointerDereference);
+	}
+
+	//Public methods
+
+	public boolean isPointerDereference()
+	{
+		return this.isPointerDereference;
 	}
 }
