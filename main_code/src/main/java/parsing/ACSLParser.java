@@ -131,8 +131,8 @@ public class ACSLParser
 			comment.setAbstractSyntaxTree(commentTree);
 			System.out.println("\nTree before collapse:");
 			System.out.println(commentTree);
-			System.out.println("\nTree after collapse:");
 			commentTree.collapse();
+			System.out.println("\nTree after collapse:");
 			System.out.println(commentTree);
 		}
 	}
@@ -884,6 +884,7 @@ public class ACSLParser
 	private void extractFunctionContracts(final AbstractSyntaxNode abstractSyntaxNode,
 										  final List<CComment> functionContracts)
 	{
+		//TODO ACSL contracts of function signatures are not taken into account!!
 		if (abstractSyntaxNode instanceof CFunctionDefinitionNode)
 		{
 			int nbAcslCommentFound = 0;
@@ -892,6 +893,7 @@ public class ACSLParser
 			{
 				if (comment.isAcslComment())
 				{
+					System.out.println("comment found");
 					functionContracts.add(comment);
 					nbAcslCommentFound++;
 				}

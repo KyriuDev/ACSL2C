@@ -38,6 +38,8 @@ import java.util.List;
  * 				It is thus improper for direct usage, as, for instance, the generated portion of C code will make use
  * 				of the parameters identifiers of the contract, instead of of the calling function.
  * 				This mapping is performed in a second phase by TODO class.
+ * 				In the rest of this class, "R_i" denotes "requirement i", "A_i" denotes "assumes i", and "E_i" denotes
+ * 			    "ensures i".
  * Author:      Quentin Nivon
  * Email:       quentin.nivon@uol.de
  * Creation:    01/04/26
@@ -63,6 +65,13 @@ public class ACSL2ASTTranslator
 	/**
 	 * Main method if this class, which is in charge of translating the given ACSL contract into its corresponding
 	 * pieces of C code, decomposed in helper methods, helper structures, and function folding.
+	 * This method precisely does the following:
+	 *     - It creates a variable called "_tmp_<function_name>" whose type is the called function's return type
+	 *     - It creates a variable for each variable introduced by (quantifiers of) the contract, named "_<variable_name>"
+	 *     - It creates an "if" condition representing the conjunction of all global requirements, along with the
+	 *       "A_i => R_i" (represented as "!A_i || R_i") behaviours' requirements.
+	 *     - Inside the "if" condition, it creates an "assume()" function call for each global "ensures" clause and each
+	 *       behaviour's "ensures" clause, such that "\old(A_i) => E_i" (represented as "!\old(A_i) || E_i").
 	 */
 	public void translate() throws UnhandledElementException
 	{
@@ -206,16 +215,23 @@ public class ACSL2ASTTranslator
 											final AbstractSyntaxTree functionTree,
 											final String functionName) throws UnhandledElementException
 	{
+		//For each global "requires" clause, we create a helper function performing the verification of the condition
 		this.createRequiresHelperFunction(requiresClause, translationComponents, requiresClauseIndex, functionTree, functionName, true);
 		this.createRequiresHelperFunction(requiresClause, translationComponents, requiresClauseIndex, functionTree, functionName, false);
 	}
 
-	private void manageGlobalEnsuresClause(final AcslBaseNode requiresClause,
+	private void manageGlobalEnsuresClause(final AcslBaseNode ensuresClause,
 										   final TranslationComponents translationComponents,
 										   final AbstractSyntaxTree functionTree,
 										   final String functionName,
 										   final HashSet<String> oldVariables) throws UnhandledElementException
 	{
+		/*
+			For each global "ensures" clause, we create:
+				- New variables if a quantifier is present
+				- A new "assume" function call containing the condition ensured by the clause
+		 */
+
 
 	}
 
